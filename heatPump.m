@@ -1,11 +1,24 @@
-function [forecastData] = heatPump()
+function [forecastData] = heatPump(setTemp)
 
-% API pulls data from OpenWeatherMap.org
-tempsURL = 'https://api.openweathermap.org/data/2.5/forecast?lat=51.5&lon=-0.14&appid=e7d8e5e8643aa76002fedf69a07e58ce&mode=xml';
-websave("temps.xml", tempsURL);
-S = readstruct("temps.xml");
-forecastData = S.forecast.time.temperature;
-disp(forecastData)
+dataPack = controller(); 
+data = jsondecode(dataPack);
 
+S = [];
+setTemp = 19;
+dataPack = controller(); 
+data = jsondecode(dataPack);
+heatLoss = 150;
+
+S = data.Temperature_Data.Average_Temperatures;
+T = struct2table(S);
+T.API_Time = datetime(T.API_Time, 'InputFormat','uuuu-MM-dd''T''HH:mm:ss','TimeZone','UTC');
+
+heatLossTotal = heatLoss.*(setTemp-T.aveAttribute);
+
+
+figure; plot(T.API_Time(1:24), heatLossTotal(1:24));
+xlabel('Time');
+ylabel('Total Heat Loss');
+title('Heat Loss');
 
 end

@@ -1,0 +1,8 @@
+We assume that our home system:
+
+Has a 3.5kW PV system on a south facing roof with a tilt of 40 degrees
+
+Has a 10kWh lithium ion battery
+
+Has a 5kW heat pump system
+

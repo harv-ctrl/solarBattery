@@ -1,4 +1,16 @@
-function [averageTemps, totalPVPowerkWh, energyCosts] = controller(lat, lon)
+function dataPack = controller(lat, lon)
+%% Intial Conditions
+cR = 2;
+t = 0.5;
+dR = 2;
+limbo = 1; % Set battery to charge
+firstRunCheck = 0;
+battkWh = 10;
+
+
+
+
+
 %% Loading Average Temperature Forecast
 % API pulls data from OpenWeatherMap.org
     lat = 52.04;
@@ -13,10 +25,10 @@ function [averageTemps, totalPVPowerkWh, energyCosts] = controller(lat, lon)
         API_Time(i,1) = allData.forecast.time(i).fromAttribute;
     end
     averageTemps = table(aveAttribute, API_Time);
-    figure; plot(API_Time, aveAttribute);
-    xlabel("Date and Time");
-    ylabel("Average Temperature");
-    title("Forecast Temperature for next 48 Hours");
+    % figure; plot(API_Time, aveAttribute);
+    % xlabel("Date and Time");
+    % ylabel("Average Temperature");
+    % title("Forecast Temperature for next 48 Hours");
 %% Loading Solar Forecast
     solarIrradianceSite = append('https://seasonal-api.open-meteo.com/v1/seasonal?latitude=', string(lat), '&longitude=', string(lon), '&hourly=global_tilted_irradiance&models=ecmwf_seasonal_seamless&temporal_resolution=hourly_1&forecast_days=7&azimuth=0&tilt=40');
     websave("solarData.json", solarIrradianceSite);
@@ -28,10 +40,10 @@ function [averageTemps, totalPVPowerkWh, energyCosts] = controller(lat, lon)
     
     totalPVPowerWh = trapz(1:24, avGTI(1:24));
     totalPVPowerkWh = totalPVPowerWh/1000;
-    figure; plot(solarTime(1:24), avGTI(1:24).*18, 'r');
-    xlabel("Date and Time");
-    ylabel("Solar Power for 18m2 Setup (kW)");
-    title("Forecast Global Tilted Irradiation for next 24 Hours");
+    % figure; plot(solarTime(1:24), avGTI(1:24).*18, 'r');
+    % xlabel("Date and Time");
+    % ylabel("Solar Power for 18m2 Setup (kW)");
+    % title("Forecast Global Tilted Irradiation for next 24 Hours");
 %% Loading Octopus Energy Forecast
     beg = datetime("today", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     fin = datetime("tomorrow", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
@@ -40,15 +52,22 @@ function [averageTemps, totalPVPowerkWh, energyCosts] = controller(lat, lon)
     energyData = readstruct("agileAPI.json");
     sizeS = size(energyData.results);
     s = sizeS(1,2);
-   
+
     for i = 1:s
         energyCosts(i,1) = energyData.results(i).value_inc_vat;
         energyTimeBaseString(i,1) = energyData.results(i).valid_from; 
     end
 
     energyTimeBase = datetime(energyTimeBaseString, 'InputFormat','uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
-    figure; plot(energyTimeBase, energyCosts,'r');
-    xlabel("Time");
-    ylabel("Energy Cost (kWh)");
-    title("Forecast Energy Usage");
+    % figure; plot(energyTimeBase, energyCosts,'r');
+    % xlabel("Time");
+    % ylabel("Energy Cost (kWh)");
+    % title("Forecast Energy Usage");
+%% Collate Temperature and Weather Data
+    tempData = struct('Average_Temperatures', averageTemps, 'Total_PV_Power', totalPVPowerkWh, 'Energy_Costs', energyCosts);
+%% Sending Parameters to Battery Storage
+    battParams = struct('Energy_Stored', battkWh, 'Charge_Rate', cR, 'Time_Period', t, 'Discharge_Rate', dR);
+%% Putting all values to Output
+    controllerData = struct('Temperature_Data', tempData, 'Battery_Parameters', battParams);
+dataPack = jsonencode(controllerData);
 end
