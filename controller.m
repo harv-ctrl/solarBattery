@@ -1,16 +1,10 @@
-function dataPack = controller(lat, lon)
+function dataPack = controller()
 %% Intial Conditions
 cR = 2;
 t = 0.5;
 dR = 2;
 limbo = 1; % Set battery to charge
-firstRunCheck = 0;
 battkWh = 10;
-
-
-
-
-
 %% Loading Average Temperature Forecast
 % API pulls data from OpenWeatherMap.org
     lat = 52.04;
@@ -63,11 +57,13 @@ battkWh = 10;
     % xlabel("Time");
     % ylabel("Energy Cost (kWh)");
     % title("Forecast Energy Usage");
+%% Collate PV Data
+    solarData = struct('Total_PV_Power', totalPVPowerkWh, 'GTI', avGTI, 'Solar_Time_Base', solarTime);
 %% Collate Temperature and Weather Data
     tempData = struct('Average_Temperatures', averageTemps, 'Total_PV_Power', totalPVPowerkWh, 'Energy_Costs', energyCosts);
 %% Sending Parameters to Battery Storage
     battParams = struct('Energy_Stored', battkWh, 'Charge_Rate', cR, 'Time_Period', t, 'Discharge_Rate', dR);
 %% Putting all values to Output
-    controllerData = struct('Temperature_Data', tempData, 'Battery_Parameters', battParams);
-dataPack = jsonencode(controllerData);
+    controllerData = struct('Temperature_Data', tempData, 'Battery_Parameters', battParams, 'Solar_Data', solarData);
+    dataPack = jsonencode(controllerData);
 end
