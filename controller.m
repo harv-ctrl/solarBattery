@@ -1,25 +1,27 @@
 function dataPack = controller()
-% Intial Conditions
+% Receive Data
 
     inputVals = humanMachineInterface();
     inputVals = jsondecode(inputVals);
 
-    disp(inputVals.location.lat)
-% Loading Average Temperature Forecast
+% Run APIs
 
-    tempData = getWeather(inputVals); % API pulls data from OpenWeatherMap.org
-% Loading Solar Forecast
+    tempData = getWeather(); % Loading Average Temperature Forecast from OpenWeatherMap.org
+    
+    solarData = getPVPower(); % Loading Solar Forecast
+    
+    energyCosts = getEnergyCost(); % Loading Octopus Energy Data
 
-    solarData = getPVPower();
-% Loading Octopus Energy Forecast
+% Build and Test Energy Profile
 
-    energyCosts = getEnergyCost();
-% Putting all values to Output
+    
+    
+% Send Data
 
     controllerData = struct('Temperature_Data', tempData, 'Solar_Data', solarData, 'Energy_Data', energyCosts);
     dataPack = jsonencode(controllerData);
 end
-
+%% Local Functions
 function energyCosts = getEnergyCost()
     beg = datetime("today", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     fin = datetime("tomorrow", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
@@ -55,7 +57,7 @@ function solarData = getPVPower()
     solarData = struct('Total_PV_Power', totalPVPowerkWh, 'GTI', avGTI, 'Solar_Time_Base', solarTime);
 end
 
-function tempData = getWeather(inputVals)
+function tempData = getWeather()
     inputVals = humanMachineInterface();
     inputVals = jsondecode(inputVals);
     lat = inputVals.location.lat;
@@ -63,12 +65,12 @@ function tempData = getWeather(inputVals)
     openWeatherMapSite = append('https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=', string(lat), '&lon=', string(lon), '&appid=e7d8e5e8643aa76002fedf69a07e58ce&mode=xml&units=metric');
     websave("allData.xml", openWeatherMapSite);
     allData = readstruct("allData.xml");
-    aveAttribute = size(48,1);
+    averageTemps = size(48,1);
+   
     % Following loop allocates values of temperature and time to table
     for i = 1:48
-        aveAttribute(i,1) = (allData.forecast.time(i).temperature.minAttribute + allData.forecast.time(i).temperature.maxAttribute)/2;
+        averageTemps(i,1) = (allData.forecast.time(i).temperature.minAttribute + allData.forecast.time(i).temperature.maxAttribute)/2;
         API_Time(i,1) = allData.forecast.time(i).fromAttribute;
     end
-    averageTemps = table(aveAttribute, API_Time);
     tempData = struct('Average_Temperatures', averageTemps, 'Weather_Time_Base', API_Time);
 end

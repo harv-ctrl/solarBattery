@@ -7,6 +7,9 @@ function inputVals = humanMachineInterface()
     
     inputVals.location.lat = 55.2;
     inputVals.location.lon = 0;
-    disp(inputVals);
+
+    inputVals.heatPump.setTemp = 19;
+    inputVals.heatPump.heatLoss = 220;
+    inputVals.heatPump.COP = 3.43; % Taken from Samsung HP website
     inputVals = jsonencode(inputVals);
 end
