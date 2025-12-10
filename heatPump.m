@@ -14,8 +14,9 @@ function HP_Data = heatPump()
     
     heatLoss = -(heatLossRate.*(setTemp-outdoorTemp))/1000;
     HP_Power = -heatLoss/COP;
-
-    [HP_Time, HP_Power] = stairs(HP_Time,HP_Power);
+    disp(numel(HP_Power))
+    disp("HP_ PowerIs")
+    %[HP_Time, HP_Power] = stairs(HP_Time,HP_Power);
     
     HP_Data = struct('HP_Power', HP_Power, 'HP_Time_Base', HP_Time);
     

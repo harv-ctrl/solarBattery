@@ -2,8 +2,8 @@ function PV_Data = solarPV()
 %% Today
 dataPack = controller();
 data = jsondecode(dataPack);
-todayPVPower = data.Solar_Data.GTI(1:96);
-todayPVTime = data.Solar_Data.Solar_Time_Base(1:96);
+todayPVPower = data.Solar_Data.GTI;
+todayPVTime = data.Solar_Data.Solar_Time_Base;
 todayPVTime = datetime(todayPVTime, "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
 
 todayPVData = struct('PV_Power', todayPVPower,'PV_Time_Base', todayPVTime);

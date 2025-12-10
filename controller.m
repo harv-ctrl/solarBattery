@@ -12,9 +12,6 @@ function dataPack = controller()
     
     energyCosts = getEnergyCost(); % Loading Octopus Energy Data
 
-% Build and Test Energy Profile
-
-    
     
 % Send Data
 
@@ -23,9 +20,9 @@ function dataPack = controller()
 end
 %% Local Functions
 function energyCosts = getEnergyCost()
-    beg = datetime("today", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    beg = datetime("now", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     fin = datetime("tomorrow", "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
-    agileAPI = append('https://api.octopus.energy/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
+    agileAPI = append('https://api.octopus.energy/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin+1));
     websave("agileAPI.json", agileAPI);
     energyData = readstruct("agileAPI.json");
     sizeS = size(energyData.results);
@@ -36,6 +33,7 @@ function energyCosts = getEnergyCost()
     end
     energyTimeBase = datetime(energyTimeBaseString, 'InputFormat','uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     energyCosts = struct('Energy_Prices', energyCosts, 'Energy_Time_Base', energyTimeBase);
+    
 end
 
 function solarData = getPVPower()
@@ -51,6 +49,11 @@ function solarData = getPVPower()
     solarTimeString = solarData.hourly.time;
     solarTime = datetime(solarTimeString, 'InputFormat','uuuu-MM-dd''T''HH:mm','TimeZone','UTC');
 
+    xq = (solarTime(1):(1/48):solarTime(numel(solarTime)))';
+    avGTI = interp1(solarTime, avGTI, xq);
+    solarTime = xq;
+    
+    
     totalPVPowerWh = trapz(1:24, avGTI(1:24));
     totalPVPowerkWh = totalPVPowerWh/1000;
     
@@ -65,12 +68,18 @@ function tempData = getWeather()
     openWeatherMapSite = append('https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=', string(lat), '&lon=', string(lon), '&appid=e7d8e5e8643aa76002fedf69a07e58ce&mode=xml&units=metric');
     websave("allData.xml", openWeatherMapSite);
     allData = readstruct("allData.xml");
-    averageTemps = size(72,1);
+    
    
     % Following loop allocates values of temperature and time to table
-    for i = 1:72
+    for i = 1:numel(allData.forecast.time)
         averageTemps(i,1) = (allData.forecast.time(i).temperature.minAttribute + allData.forecast.time(i).temperature.maxAttribute)/2;
         API_Time(i,1) = allData.forecast.time(i).fromAttribute;
     end
+
+    xq = (API_Time(1):(1/48):API_Time(numel(API_Time)))';
+    averageTemps = interp1(API_Time, averageTemps, xq);
+    API_Time = xq;
     tempData = struct('Average_Temperatures', averageTemps, 'Weather_Time_Base', API_Time);
+    
+
 end
