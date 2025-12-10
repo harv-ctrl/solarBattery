@@ -43,7 +43,7 @@ function solarData = getPVPower()
     inputVals = jsondecode(inputVals);
     lat = inputVals.location.lat;
     lon = inputVals.location.lon;
-    solarIrradianceSite = append('https://seasonal-api.open-meteo.com/v1/seasonal?latitude=', string(lat), '&longitude=', string(lon), '&hourly=global_tilted_irradiance&models=ecmwf_seasonal_seamless&temporal_resolution=hourly_1&forecast_days=7&azimuth=0&tilt=40');
+    solarIrradianceSite = append('https://seasonal-api.open-meteo.com/v1/seasonal?latitude=', string(lat), '&longitude=', string(lon), '&hourly=global_tilted_irradiance&models=ecmwf_seasonal_seamless&temporal_resolution=hourly_1&timezone=Europe%2FLondon&forecast_days=7&azimuth=0&tilt=40');
     websave("solarData.json", solarIrradianceSite);
     solarData = readstruct("solarData.json");
 
@@ -65,10 +65,10 @@ function tempData = getWeather()
     openWeatherMapSite = append('https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=', string(lat), '&lon=', string(lon), '&appid=e7d8e5e8643aa76002fedf69a07e58ce&mode=xml&units=metric');
     websave("allData.xml", openWeatherMapSite);
     allData = readstruct("allData.xml");
-    averageTemps = size(48,1);
+    averageTemps = size(72,1);
    
     % Following loop allocates values of temperature and time to table
-    for i = 1:48
+    for i = 1:72
         averageTemps(i,1) = (allData.forecast.time(i).temperature.minAttribute + allData.forecast.time(i).temperature.maxAttribute)/2;
         API_Time(i,1) = allData.forecast.time(i).fromAttribute;
     end
