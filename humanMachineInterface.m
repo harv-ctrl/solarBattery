@@ -1,12 +1,26 @@
-function inputVals = humanMachineInterface()
+function inputData = humanMachineInterface()
 
-    inputVals.battery.battEnergy = 10; % Intial battery capacity of 10 kWh
+    inputData.battery.battEnergy = 10; % Intial battery capacity of 10 kWh
     
-    inputVals.location.lat = 55.2;
-    inputVals.location.lon = 0;
+    inputData.location.lat = 55.38;
+    inputData.location.lon = -1.56;
 
-    inputVals.heatPump.setTemp = 19;
-    inputVals.heatPump.heatLoss = 220;
-    inputVals.heatPump.COP = 3.43; % Taken from Samsung HP website
-    inputVals = jsonencode(inputVals);
+    inputData.heatPump.setTemp = 19;
+    inputData.heatPump.heatLoss = 220;
+    inputData.heatPump.COP = 3.43; % Taken from Samsung HP website
+    
+    inputData.winterTestCase.begin_date = {'2026-01-01T00:00:00Z'};
+    inputData.winterTestCase.end_date = {'2026-01-02T23:30:00Z'};
+    inputData.winterTestCase.begin_date_short = {'2026-01-01'};
+    inputData.winterTestCase.end_date_short = {'2026-01-02'};
+
+    inputData.summerTestCase.begin_date = {'2025-06-20T00:00:00Z'};
+    inputData.summerTestCase.end_date = {'2025-06-21T23:30:00Z'};
+    inputData.summerTestCase.begin_date_short = {'2025-06-20'};
+    inputData.summerTestCase.end_date_short = {'2025-06-21'};
+    
+    inputData.PVData.numPanels = 8;
+    inputData.PVData.panelArea = 1.7*1;
+           
+    inputData = jsonencode(inputData);
 end

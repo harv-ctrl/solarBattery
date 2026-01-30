@@ -1,23 +1,19 @@
 function PV_Data = solarPV()
 %% Today
-dataPack = controller();
-data = jsondecode(dataPack);
-todayPVPower = data.Solar_Data.GTI;
-todayPVTime = data.Solar_Data.Solar_Time_Base;
-todayPVTime = datetime(todayPVTime, "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
-
-todayPVData = struct('PV_Power', todayPVPower,'PV_Time_Base', todayPVTime);
-
-%% Next Day
-
-nextPVPower = data.Solar_Data.GTI(49:96);
-nextPVTime = data.Solar_Data.Solar_Time_Base(49:96);
-
-nextPVData = struct('PV_Power', nextPVPower, 'PV_Time_Base', nextPVTime);
-
-%% Collate Data
-
-PV_Data = struct('Today_PV_Data', todayPVData, 'Next_Day_PV_Data', nextPVData);
-
-disp(PV_Data.Today_PV_Data);
+    dataPack = testController();
+    data = jsondecode(dataPack);
+    inputData = humanMachineInterface();
+    inputData = jsondecode(inputData);
+    GTI = data.Solar_Data.GTI;
+    PVTimeBase = data.Solar_Data.Solar_Time_Base;
+    
+    numPanels = inputData.PVData.numPanels;
+    panelArea = inputData.PVData.panelArea;
+    PV_Power = GTI.*(numPanels).*(panelArea);
+    
+    PV_Data.PV_Power = PV_Power;
+    for i = 1:numel(PVTimeBase)
+        PV_Data.PV_Time_Base(i,1) = PVTimeBase(i);
+    end
+    PV_Data = jsonencode(PV_Data);
 end
