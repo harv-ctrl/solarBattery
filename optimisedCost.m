@@ -1,5 +1,5 @@
 function fval = optimisedCost()
-    out = energyOptimiser();
+    out = gatherOptimisationData();
     % Define all values to be used within the cost function
     global optimVars
     optimVars.ImportPrice = out.EC_Import_Price; 
@@ -91,4 +91,45 @@ function f = costFunction(x)
     penalty = penalty*penaltyScale;
     
     f = f+penalty;
-    end
+end
+function out = gatherOptimisationData()
+    dataPack = testController();
+    data = jsondecode(dataPack);
+
+    HP_Data = heatPump();
+    HP_Data = jsondecode(HP_Data);
+    
+    PV_Data = solarPV();
+    PV_Data = jsondecode(PV_Data);
+
+    HP_Power = HP_Data.HP_Power;
+    HP_Time = HP_Data.HP_Time_Base;
+    HP_Time = datetime(HP_Time,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    
+    PV_Time = PV_Data.PV_Time_Base;
+    PV_Time = datetime(PV_Time,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    PV_Power = PV_Data.PV_Power./1000;
+
+    EC_Import_Time = data.Energy_Data.Energy_Import_Costs.Energy_Import_Time_Base;
+    EC_Import_Time = datetime(EC_Import_Time, "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    EC_Import_Price = data.Energy_Data.Energy_Import_Costs.Energy_Import_Prices;
+    
+    EC_Export_Time = data.Energy_Data.Energy_Export_Costs.Energy_Export_Time_Base;
+    EC_Export_Time = datetime(EC_Export_Time, "Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    EC_Export_Price = data.Energy_Data.Energy_Export_Costs.Energy_Export_Prices;
+    
+    T_HP = timetable(HP_Time, HP_Power);
+    T_PV = timetable(PV_Time, PV_Power);
+    T_Import_EC = timetable(EC_Import_Time, EC_Import_Price);
+    T_Export_EC = timetable(EC_Export_Time, EC_Export_Price);
+    
+    T1 = join(T_PV,T_HP);
+    T2 = join(T_Import_EC,T_Export_EC);
+    disp(T2)
+    
+    out = join(T1, T2);
+       
+    % figure;
+    % plot(PV_Time(1:48),(HP_Power(1:48)-PV_Power(1:48)).*(EC_Price(1:48)),'g');
+    
+  end
