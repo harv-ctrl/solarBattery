@@ -18,6 +18,9 @@ function HP_Data = heatPump()
         if HP_Power(i) < 0
             HP_Power(i) = 0;
         end
+        if HP_Power(i) > 5
+            HP_Power(i) = 5;
+        end
     end
 %% Collate Data    
     HP_Data = struct('HP_Power', HP_Power, 'HP_Time_Base', HP_Time);

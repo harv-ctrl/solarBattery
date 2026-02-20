@@ -22,8 +22,8 @@ end
 function energyTestCosts = getTestEnergyCost()
     inputData = humanMachineInterface();
     inputData = jsondecode(inputData);
-    beg = inputData.winterTestCase.begin_date;
-    fin = inputData.winterTestCase.end_date;
+    beg = inputData.TestCase.begin_date;
+    fin = inputData.TestCase.end_date;
     agileAPIImport = append('https://api.octopus.energy/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
     agileAPIExport = append('https://api.octopus.energy/v1/products/AGILE-OUTGOING-19-05-13/electricity-tariffs/E-1R-AGILE-OUTGOING-19-05-13-A/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
     websave("agileAPIImport.json", agileAPIImport);
@@ -51,8 +51,8 @@ function solarTestData = getTestPVPower()
     inputData = jsondecode(inputData);
     lat = inputData.location.lat;
     lon = inputData.location.lon;
-    beg = datetime(inputData.winterTestCase.begin_date_short,"Format","uuuu-MM-dd",'TimeZone','UTC');
-    fin = datetime(inputData.winterTestCase.end_date_short, "Format","uuuu-MM-dd",'TimeZone','UTC');
+    beg = datetime(inputData.TestCase.begin_date_short,"Format","uuuu-MM-dd",'TimeZone','UTC');
+    fin = datetime(inputData.TestCase.end_date_short, "Format","uuuu-MM-dd",'TimeZone','UTC');
     solarIrradianceSite = append('https://archive-api.open-meteo.com/v1/archive?latitude=',string(lat),'&longitude=',string(lon),'&start_date=', string(beg), '&end_date=', string(fin), '&hourly=global_tilted_irradiance&tilt=40');
     websave("solarTestData.json", solarIrradianceSite);
     solarData = readstruct("solarTestData.json");
@@ -76,8 +76,8 @@ function tempData = getTestWeather()
     inputData = jsondecode(inputData);
     lat = inputData.location.lat;
     lon = inputData.location.lon;
-    beg = datetime(inputData.winterTestCase.begin_date_short,"Format","uuuu-MM-dd",'TimeZone','UTC');
-    fin = datetime(inputData.winterTestCase.end_date_short, "Format","uuuu-MM-dd",'TimeZone','UTC');
+    beg = datetime(inputData.TestCase.begin_date_short,"Format","uuuu-MM-dd",'TimeZone','UTC');
+    fin = datetime(inputData.TestCase.end_date_short, "Format","uuuu-MM-dd",'TimeZone','UTC');
     openWeatherMapSite = append('https://archive-api.open-meteo.com/v1/archive?latitude=',string(lat),'&longitude=',string(lon),'&start_date=',string(beg),'&end_date=',string(fin),'&hourly=temperature_2m');
     websave("allData.json", openWeatherMapSite);
     allData = readstruct("allData.json");
@@ -86,10 +86,10 @@ function tempData = getTestWeather()
     for i = 1:numel(allData.hourly.time)
         averageTemps(i,1) = allData.hourly.temperature_2m(i);
         API_Time(i,1) = allData.hourly.time(i);
-        converted_API_Time(i,1) = datetime(API_Time(i,1), "Format",'uuuu-MM-dd''T''HH:mm''', 'TimeZone', 'UTC');
+        converted_API_Time(i,1) = datetime(API_Time(i,1), "Format",'uuuu-MM-dd''T''HH:mm', 'TimeZone', 'UTC');
     end
-    beg = datetime(inputData.winterTestCase.begin_date, 'InputFormat','uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
-    fin = datetime(inputData.winterTestCase.end_date, 'InputFormat','uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    beg = datetime(inputData.TestCase.begin_date, 'InputFormat','yyyy-MM-dd''T''HH:mm:ss''Z', 'TimeZone', 'UTC');
+    fin = datetime(inputData.TestCase.end_date, 'InputFormat','yyyy-MM-dd''T''HH:mm:ss''Z', 'TimeZone', 'UTC');
     xq = beg:1/48:fin;
     averageTemps = interp1(converted_API_Time, averageTemps, xq);
     API_Time = xq;

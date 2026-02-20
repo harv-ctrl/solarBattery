@@ -1,4 +1,0 @@
-function batteryData = battery()
-
-end
-
