@@ -6,8 +6,7 @@ function AP_Data = homeAppliances()
     Start_Time = datetime(ST,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     End_Time = datetime(ET,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     ApplPower = input.ApplianceData.totalPower./6;
-    disp(End_Time)
-    
+    prof = zeros(numel(data.Solar_Data.Solar_Time_Base),1);    
     for i = 1:numel(data.Solar_Data.Solar_Time_Base)
     time(i,1) = datetime(data.Solar_Data.Solar_Time_Base(i),"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
         if time(i,1) >= Start_Time
@@ -20,7 +19,6 @@ function AP_Data = homeAppliances()
             prof(i,1) = 0;
         end
     end
-
     AP_Data = struct('AP_Power',prof,'AP_Time',time);
     AP_Data = jsonencode(AP_Data);
 end

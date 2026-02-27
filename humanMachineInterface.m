@@ -1,5 +1,5 @@
 function inputData = humanMachineInterface()
-    global counter
+    global date
     inputData.battery.battEnergy = 10; % Intial battery capacity of 10 kWh
     
     inputData.location.lat = 55.38;
@@ -14,11 +14,17 @@ function inputData = humanMachineInterface()
     % startdateshort = datetime('2025-01-1','Format','uuuu-MM-dd','TimeZone','UTC');
     % enddateshort = datetime('2025-01-2','Format','uuuu-MM-dd','TimeZone','UTC');
     % %disp(startdate);
-        
-    inputData.TestCase.begin_date = '2025-01-13T00:00:00Z';
-    inputData.TestCase.end_date = '2025-01-14T23:30:00Z';
-    inputData.TestCase.begin_date_short = '2025-01-13';
-    inputData.TestCase.end_date_short = '2025-01-14';
+
+    % inputData.TestCase.begin_date = '2025-04-6T00:00:00Z';
+    % inputData.TestCase.end_date = '2025-04-7T23:30:00Z';
+    % inputData.TestCase.begin_date_short = '2025-04-6';
+    % inputData.TestCase.end_date_short = '2025-04-7';
+    
+    inputData.TestCase.begin_date = date.start;
+    inputData.TestCase.end_date = date.end;
+    inputData.TestCase.begin_date_short = date.ss;
+    inputData.TestCase.end_date_short = date.se;
+  
   
     inputData.PVData.numPanels = 8;
     inputData.PVData.panelArea = 1.7*1;

@@ -1,4 +1,4 @@
-function [DP,x_opt,plotData] = optimisedCost()
+function [DP,UP,SP,x_opt,plotData,gasEnergy] = optimisedCost()
     out = gatherOptimisationData();
     % Define all values to be used within the cost function
     global optimVars
@@ -22,7 +22,7 @@ function [DP,x_opt,plotData] = optimisedCost()
     beq = zeros(1);
     x0 = 0*ones(N,1);
     
-    options = optimoptions('fmincon','Display','iter','Algorithm','interior-point','MaxFunctionEvaluations',10e5);
+    options = optimoptions('fmincon','Algorithm','interior-point','MaxFunctionEvaluations',10e5,'Display','off');
     %options = optimoptions("fminimax","Display","iter","MaxIterations",10e5);
     [x_opt, ~] = fmincon(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
     %[x_opt, ~] = fminimax(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
@@ -31,32 +31,10 @@ function [DP,x_opt,plotData] = optimisedCost()
     
     GridImport = (Load + AP - PV - x_opt) * dt;
     
-    % figure;
-    % subplot(3,1,1);
-    % plot(out.PV_Time(1:48),charge,'LineWidth',1.5);
-    % ylabel('SOC (kWh)');
-    % grid on;
-    % 
-    % subplot(3,1,2);
-    % plot(out.PV_Time(1:48),x_opt,'LineWidth',1.5);
-    % ylabel('Battery Energy (kWh/step)');
-    % grid on;
-    % 
-    % subplot(3,1,3);
-    % plot(out.PV_Time(1:48),GridImport(1:48),'LineWidth',1.5);
-    % ylabel('Grid Import (kWh)');
-    % xlabel('Timestep');
-    % grid on;
-    % 
-    % 
-    % 
-    % figure;
-    % plot(out.PV_Time(1:48),charge,'LineWidth',1.5);
-    % yline(1,'r--');
-    % yline(9,'r--');
-    % grid on;
-    % ylabel('SOC (kWh)');
-    % xlabel('Time step');
+    
+    
+    
+    
     
     IP = optimVars.ImportPrice;
     EP = optimVars.ExportPrice;
@@ -77,6 +55,8 @@ function [DP,x_opt,plotData] = optimisedCost()
     plotData.balancedPrice = ((BG>0).*(BG).*IP + (BG<0).*(BG).*EP)*dt;
     plotData.DailyUnshiftedPrice = sum(((UG>0).*(UG).*IP + (UG<0).*(UG).*EP)*dt);
     DP = plotData.DailyUnshiftedPrice-plotData.DailyShiftedPrice;
+    UP = plotData.DailyUnshiftedPrice;
+    SP = plotData.DailyShiftedPrice;
 end
 
 function f = costFunction(x)

@@ -14,7 +14,8 @@ function HP_Data = heatPump()
     
     heatLoss = -(heatLossRate.*(setTemp-outdoorTemp))/1000;
     HP_Power = -heatLoss/COP;
-    for i = 1:size(HP_Power)
+    HPS = numel(HP_Power);
+    for i = 1:HPS
         if HP_Power(i) < 0
             HP_Power(i) = 0;
         end

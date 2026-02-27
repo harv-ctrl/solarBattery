@@ -82,7 +82,9 @@ function tempData = getTestWeather()
     websave("allData.json", openWeatherMapSite);
     allData = readstruct("allData.json");
     
-       % Following loop allocates values of temperature and time to table
+    % Following loop allocates values of temperature and time to table
+    averageTemps = zeros(numel(allData.hourly.time),1);
+    
     for i = 1:numel(allData.hourly.time)
         averageTemps(i,1) = allData.hourly.temperature_2m(i);
         API_Time(i,1) = allData.hourly.time(i);
