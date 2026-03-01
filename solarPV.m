@@ -1,19 +1,17 @@
 function PV_Data = solarPV()
-%% Today
-    dataPack = testController();
-    data = jsondecode(dataPack);
+    % Gathers data
+    data = testController();
     inputData = humanMachineInterface();
-    inputData = jsondecode(inputData);
+
+    % Reads amount of power incident
     GTI = data.Solar_Data.GTI;
     PVTimeBase = data.Solar_Data.Solar_Time_Base;
-    
     numPanels = inputData.PVData.numPanels;
     panelArea = inputData.PVData.panelArea;
-    PV_Power = GTI.*(numPanels).*(panelArea);
     
-    PV_Data.PV_Power = PV_Power;
-    for i = 1:numel(PVTimeBase)
-        PV_Data.PV_Time_Base(i,1) = PVTimeBase(i);
-    end
-    PV_Data = jsonencode(PV_Data);
+    % Applies panel efficiency
+    efficiency = 0.2;
+    pvPower = GTI.*(numPanels).*(panelArea).*efficiency; 
+    
+    PV_Data = struct('PV_Power',pvPower,'PV_Time_Base',PVTimeBase);
 end

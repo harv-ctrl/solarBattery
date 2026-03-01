@@ -1,5 +1,7 @@
-function [DP,UP,SP,x_opt,plotData,gasEnergy] = optimisedCost()
+function [DP,UP,SP,x_opt,plotData] = optimisedCost()
+    % Runs local function to collect data from components
     out = gatherOptimisationData();
+
     % Define all values to be used within the cost function
     global optimVars
     optimVars.ImportPrice = out.EC_Import_Price(1:48); 
@@ -9,51 +11,42 @@ function [DP,UP,SP,x_opt,plotData,gasEnergy] = optimisedCost()
     optimVars.dt = 0.5; dt = optimVars.dt;                
     optimVars.N  = length(optimVars.ImportPrice(1:48)); N = optimVars.N;
     optimVars.initCharge = 2; initCharge = optimVars.initCharge;              
-    optimVars.maxCharge = 10; maxCharge = optimVars.maxCharge;
+    optimVars.maxCharge = 10; 
     optimVars.AP = out.AP_Power(1:48); AP = optimVars.AP;
     
+    % Optimisation restraints
     lb = -2 * ones(N,1);  
     ub =  2 * ones(N,1);
-    
-    A = []; A1 =  A; A2 = -A;        
-    b = []; b1 =  b;  b2 = (maxCharge - initCharge) * ones(N,1);
-    
+    A = [];       
+    b = [];
     Aeq = ones(1,N);
     beq = zeros(1);
+
+    % Initial guess (battery unused)
     x0 = 0*ones(N,1);
     
     options = optimoptions('fmincon','Algorithm','interior-point','MaxFunctionEvaluations',10e5,'Display','off');
-    %options = optimoptions("fminimax","Display","iter","MaxIterations",10e5);
     [x_opt, ~] = fmincon(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
-    %[x_opt, ~] = fminimax(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
     
-    charge = initCharge - cumsum(x_opt);
-    
-    GridImport = (Load + AP - PV - x_opt) * dt;
-    
-    
-    
-    
-    
-    
+    % Gather data for internal cost logic
     IP = optimVars.ImportPrice;
     EP = optimVars.ExportPrice;
-    plotData.unbalancedPower = Load+AP-PV;
-    plotData.balancedPower = Load+AP-PV-x_opt;
+    UG = (Load+AP-PV); 
+    BG = Load+AP-PV-x_opt; 
+    
+    % Generate data for app plotting
+    plotData.unbalancedPower = Load+AP-PV; 
+    plotData.balancedPower = Load+AP-PV-x_opt; 
     plotData.time = out.PV_Time(1:48);
-    plotData.SOC = charge;
+    plotData.SOC = initCharge - cumsum(x_opt);
     plotData.batteryProfile = x_opt;
-
     plotData.PV = PV;
-    
-    
-    UG = (Load+AP-PV);
-    BG = Load+AP-PV-x_opt;
-    
     plotData.DailyShiftedPrice = sum(((BG>0).*(BG).*IP + (BG<0).*(BG).*EP)*dt);
     plotData.unbalancedPrice = ((UG>0).*(UG).*IP + (UG<0).*(UG).*EP)*dt;
     plotData.balancedPrice = ((BG>0).*(BG).*IP + (BG<0).*(BG).*EP)*dt;
     plotData.DailyUnshiftedPrice = sum(((UG>0).*(UG).*IP + (UG<0).*(UG).*EP)*dt);
+    
+    % Exports data for findBestDay()
     DP = plotData.DailyUnshiftedPrice-plotData.DailyShiftedPrice;
     UP = plotData.DailyUnshiftedPrice;
     SP = plotData.DailyShiftedPrice;
@@ -71,8 +64,10 @@ function f = costFunction(x)
     N = optimVars.N;
     AP = optimVars.AP;
     currentCharge(1) = initCharge;
-    grid = Load+AP-PV-x;
+    grid = Load+AP-PV-x; 
     f = sum((grid>0).*(grid).*ImportPrice + (grid<0).*(grid).*ExportPrice)*dt;
+   
+    % Calculate penalty for cost function
     penalty = 0;
     for i = 2:N+1
         currentCharge(i) = currentCharge(i-1) - x(i-1);
@@ -84,26 +79,20 @@ function f = costFunction(x)
             
         end
     end
+
+    % Penalty togglables, hand-tuned
     penaltyScale = 20;
     penalty = penalty*penaltyScale;
     trial_penalty = 0.9*sum(diff(x).^2);
     f = f+penalty+trial_penalty;
-    
-    
 end
 function out = gatherOptimisationData()
-    dataPack = testController();
-    data = jsondecode(dataPack);
-
+    % Check all components are working properly
+    data = testController();
     HP_Data = heatPump();
-    HP_Data = jsondecode(HP_Data);
-    
     PV_Data = solarPV();
-    PV_Data = jsondecode(PV_Data);
-
     AP_Data = homeAppliances();
-    AP_Data = jsondecode(AP_Data);
-
+    
     HP_Power = HP_Data.HP_Power;
     HP_Time = HP_Data.HP_Time_Base;
     HP_Time = datetime(HP_Time,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
@@ -135,4 +124,5 @@ function out = gatherOptimisationData()
     T3 = join(T1,T2);
     
     out = join(T3,T_AP);
+    % This generates a timetable of all component values.
 end
