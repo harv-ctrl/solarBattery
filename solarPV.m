@@ -12,6 +12,6 @@ function PV_Data = solarPV()
     % Applies panel efficiency
     efficiency = 0.2;
     pvPower = GTI.*(numPanels).*(panelArea).*efficiency; 
-    
-    PV_Data = struct('PV_Power',pvPower,'PV_Time_Base',PVTimeBase);
+    pvEnergy = sum(pvPower)*0.5;
+    PV_Data = struct('PV_Power',pvPower,'PV_Energy',pvEnergy/1000,'PV_Time_Base',PVTimeBase);
 end

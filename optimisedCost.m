@@ -95,14 +95,14 @@ function out = gatherOptimisationData()
     
     HP_Power = HP_Data.HP_Power;
     HP_Time = HP_Data.HP_Time_Base;
-    HP_Time = datetime(HP_Time,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+   
     
     PV_Time = PV_Data.PV_Time_Base;
-    PV_Time = datetime(PV_Time,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    
     PV_Power = PV_Data.PV_Power./1000;
 
     AP_Time = AP_Data.AP_Time;
-    AP_Time = datetime(AP_Time,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
+    
     AP_Power = AP_Data.AP_Power;
 
     EC_Import_Time = data.Energy_Data.Energy_Import_Costs.Energy_Import_Time_Base;
@@ -124,5 +124,6 @@ function out = gatherOptimisationData()
     T3 = join(T1,T2);
     
     out = join(T3,T_AP);
+    
     % This generates a timetable of all component values.
 end

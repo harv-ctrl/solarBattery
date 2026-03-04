@@ -14,7 +14,7 @@ function inputData = humanMachineInterface()
     inputData.heatPump.COP = 3.66; % Taken from VAILLANT AROTHERM
     inputData.heatPump.highTempTimeOn = '06:00:00';
     inputData.heatPump.highTempTimeOff = '22:30:00';
-    inputData.heatPump.hotWater = 90*4.18*40/3600; % Litres used * heat capacity * temperature difference / kWh conversion
+    inputData.heatPump.hotWaterEnergy = 90*4.18*40/3600; % Litres used * heat capacity * temperature difference / kWh conversion
     inputData.heatPump.HW_Start = 'T11:00:00Z';
     inputData.heatPump.HW_End = 'T15:00:00Z';
 
@@ -22,7 +22,7 @@ function inputData = humanMachineInterface()
         testDay ='2025-10-27';
         nextDay = '2025-10-28';
 
-    % % Detect if findBestDay() is running
+    % Detect if findBestDay() is running
     % try 
     %     inputData.TestCase.begin_date = date.start;
     %     inputData.TestCase.end_date = date.end;
@@ -38,13 +38,13 @@ function inputData = humanMachineInterface()
     inputData.TestCase.end_date = append(nextDay,'T23:30:00Z');
     inputData.TestCase.begin_date_short = testDay;
     inputData.TestCase.end_date_short = nextDay;
-  
+    
     inputData.PVData.numPanels = 8;
     inputData.PVData.panelArea = 1.7*1;
 
     %% APPLIANCE SPECS
     inputData.ApplianceData.Start_Time = 'T02:00:00Z';
     inputData.ApplianceData.End_Time = 'T05:00:00Z';
-    inputData.ApplianceData.totalPower = 0.67+0.95; % Combined Washing Machine and Dishwasher
+    inputData.ApplianceData.totalEnergy = 0.67+0.95; % Combined Washing Machine and Dishwasher
     
 end

@@ -28,16 +28,19 @@ function HP_Data = heatPump()
     HP_Power = min(HP_Power,5);
     HP_Power(outdoorTemp > 17) = 0; % HP does not operate close to set temp
     %% Hot Water Usage
-    HW_Power = (inputData.heatPump.hotWater)/8; % Half-hourly usage, could be improved
+    HW_Power_Draw = (inputData.heatPump.hotWaterEnergy)/4; % Half-hourly usage, could be improved
     ST = append(inputData.TestCase.begin_date_short,inputData.heatPump.HW_Start);
     ET = append(inputData.TestCase.begin_date_short,inputData.heatPump.HW_End);
     Start_Time = datetime(ST,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     End_Time = datetime(ET,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     for i = 1:numel(HP_Time)
         if HP_Time(i) >= Start_Time && HP_Time(i) < End_Time
-            HP_Power(i) = HP_Power(i) + (HW_Power/COP);
+            HP_Power(i) = HP_Power(i) + (HW_Power_Draw/COP);
         end
     end
+
+    % Energy
+    HP_Energy = sum(HP_Power)*0.5 ;
 %% Collate Data    
-    HP_Data = struct('HP_Power', HP_Power', 'HP_Time_Base', HP_Time');
+    HP_Data = struct('HP_Power', HP_Power,'HP_Energy',HP_Energy, 'HP_Time_Base', HP_Time);
 end
