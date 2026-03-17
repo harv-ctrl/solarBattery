@@ -1,7 +1,7 @@
 function inputData = humanMachineInterface()
     global date % This allows findBestDay() to run
     global bestDay
-    global year
+    
     %% Change the following for different simulation results
     % BATTERY SPECS
     inputData.battery.battEnergy = 10; % Intial battery capacity of 10 kWh
@@ -26,8 +26,8 @@ function inputData = humanMachineInterface()
     inputData.ApplianceData.totalEnergy = 0.67+0.95; % Combined Washing Machine and Dishwasher
     
     % TEST DAY FOR APP
-    testDay ='2025-10-27';
-    nextDay = '2025-10-28';
+    testDay ='2022-10-27';
+    nextDay = '2022-10-28';
 
 
     %% INDIVIDUAL TEST DAY SPEC (FOR APP)
