@@ -5,7 +5,7 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
     bestDay = true;
     
     %% Choose Year for Whole Year Results ---------------- INPUT HERE!
-    year = '2025';
+    year = '2026';
 
     %%
     daysInYear = yeardays(str2double(year)); 
@@ -18,14 +18,15 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
     time = strings(daysInYear,1);
     saving = zeros([daysInYear 1]);
     energyUse = zeros([daysInYear 1]);
-    bestDay = false;
+    bestDay = true; %change this if you trying to run your basic 2022 loop (H)
     %% Main Function
-    for i = 1:daysInYear % run for the whole year! 
+    for i = 1:daysInYear % daysInYear will run for the whole year! (For testing, do i = 1:2 for 48h window) (H)
         date.start = days.start(i);
         date.end = days.finish(i);
         date.ss = days.ss(i);
         date.se = days.se(i);
-        [DP,UP,SP,~,~] = optimisedCost();
+        [DP,UP,SP,~,plotData] = optimisedCost(); %changed 5th tilda with plotData (testing purposes only)
+        disp(plotData.time([1 end]));
         unshiftedValue(i,1) = UP;
         shiftedValue(i,1) = SP;
         saving(i,1) = DP;
@@ -92,4 +93,23 @@ global year
     days.finish = finish;
     days.ss = ss;
     days.se = se;
+% This is the improvement I could chuck in for Ferdinand's code. Uses
+% in-house MATLAB datetime function to build the dates.
+
+    %function days = calculateYearDates(daysInYear)
+        %global year
+
+        %firstDay = datetime(str2double(year), 1, 1, 'TimeZone', 'UTC');
+
+        % Generate each day and the following day
+        %startDates = firstDay + caldays((0:daysInYear-1)');
+        %nextDates = startDates + caldays(1);
+
+        % Short dates for weather requests
+        %days.ss = string(startDates, 'yyyy-MM-dd');
+        %days.se = string(nextDates, 'yyyy-MM-dd');
+
+        % Full timestamps for tariff requests
+        %days.start = string(startDates, "yyyy-MM-dd'T'HH:mm:ss'Z'");
+        %days.finish = string(nextDates + hours(23) + minutes(30),"yyyy-MM-dd'T'HH:mm:ss'Z'");
 end
