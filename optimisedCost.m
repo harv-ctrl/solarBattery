@@ -22,8 +22,15 @@ function [DP,UP,SP,x_opt,plotData] = optimisedCost()
     % Optimisation restraints
     lb = -2 * ones(N,1);  
     ub =  2 * ones(N,1);
-    A = [];       
-    b = [];
+    %A = [];       
+    %b = [];
+    %Below alteration would set proper restraints for 10% tolerance on that
+    %battery (H)
+    cumulativePower = tril(ones(N));
+     A = [-dt*cumulativePower; dt*cumulativePower];
+
+     b = [(0.9*optimVars.maxCharge - initCharge)*ones(N,1); (initCharge - 0.1*optimVars.maxCharge)*ones(N,1)];
+    
     Aeq = ones(1,N);
     beq = zeros(1);
 
@@ -43,7 +50,7 @@ function [DP,UP,SP,x_opt,plotData] = optimisedCost()
     plotData.unbalancedPower = Load+AP-PV; 
     plotData.balancedPower = Load+AP-PV-x_opt; 
     plotData.time = out.PV_Time(1:48);
-    plotData.SOC = initCharge - cumsum(x_opt);
+    plotData.SOC = initCharge - cumsum(x_opt)*dt; %added *dt here as well (H)
     plotData.batteryProfile = x_opt;
     plotData.PV = PV;
     plotData.DailyShiftedPrice = sum(((BG>0).*(BG).*IP + (BG<0).*(BG).*EP)*dt);
@@ -75,7 +82,7 @@ function f = costFunction(x)
     % Calculate penalty for cost function
     penalty = 0;
     for i = 2:N+1
-        currentCharge(i) = currentCharge(i-1) - x(i-1);
+        currentCharge(i) = currentCharge(i-1) - x(i-1)*dt; %Added the dt here. Shouldn't it multiply by the half hour?? (H)
         if currentCharge(i) > 0.9*maxCharge
             penalty = penalty+(currentCharge(i)-0.9*maxCharge).^2;
         end
@@ -119,3 +126,4 @@ function out = gatherOptimisationData()
     out = join(T3,T_AP);
     % This generates a timetable of all component values.
 end
+
