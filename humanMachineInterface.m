@@ -4,11 +4,11 @@ function inputData = humanMachineInterface()
     
     %% Change the following for different simulation results
     % BATTERY SPECS
-    inputData.battery.battEnergy = 10; % Intial battery capacity of 10 kWh
+    inputData.battery.battEnergy = 10; % Initial battery capacity of 10 kWh
     
-    % LOCATION SPECS
-    inputData.location.lat = 55.38;
-    inputData.location.lon = -1.56;
+    % LOCATION SPECS (set to Coventry)
+    inputData.location.lat = 52.41;
+    inputData.location.lon = -1.51;
     
     % HEAT PUMP SPECS
     inputData.heatPump.setTemp = 19;
@@ -25,9 +25,11 @@ function inputData = humanMachineInterface()
     inputData.ApplianceData.End_Time = 'T05:00:00Z';
     inputData.ApplianceData.totalEnergy = 0.67+0.95; % Combined Washing Machine and Dishwasher
     
-    % TEST DAY FOR APP
-    testDay ='2022-10-27';
-    nextDay = '2022-10-28';
+    % TEST DAY FOR APP (This dude loves Oct 27th & 28th 2022)
+    %From my understanding, it uses the next day as the day thats shown in
+    %the app. 
+    testDay ='2026-01-01';
+    nextDay = '2022-01-02';
 
 
     %% INDIVIDUAL TEST DAY SPEC (FOR APP)
