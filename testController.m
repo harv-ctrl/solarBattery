@@ -28,9 +28,10 @@ function energyCosts = getTestEnergyCost()
     inputData = humanMachineInterface();
     beg = inputData.TestCase.begin_date;
     fin = inputData.TestCase.end_date;
-    agileAPIImport = append('https://api.octopus.energy/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
-    agileAPIExport = append('https://api.octopus.energy/v1/products/AGILE-OUTGOING-19-05-13/electricity-tariffs/E-1R-AGILE-OUTGOING-19-05-13-A/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
-   
+    agileAPIImport = append('https://api.octopus.energy/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-B/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
+    agileAPIExport = append('https://api.octopus.energy/v1/products/AGILE-OUTGOING-19-05-13/electricity-tariffs/E-1R-AGILE-OUTGOING-19-05-13-B/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
+   % The Codes in the URLs are important, as the ending letter determines
+   % their group. Coventry is B, so changed both to B
     energyImportData = webread(agileAPIImport);
     energyExportData = webread(agileAPIExport);
     count = energyImportData.count;
