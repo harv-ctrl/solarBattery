@@ -38,7 +38,14 @@ function [DP,UP,SP,x_opt,plotData] = optimisedCost()
     x0 = 0*ones(N,1);
     
     options = optimoptions('fmincon','Algorithm','interior-point','MaxFunctionEvaluations',10e5,'Display','off');
-    [x_opt, ~] = fmincon(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
+    [x_opt, ~, exitflag, solverOutput] = fmincon(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
+
+    if exitflag <= 0
+        error('optimisedCost:SolverFailed', 'Battery optimisation did not complete successfully. Exit flag: %d. Details: %s', exitflag, solverOutput.message);
+    end
+
+    plotData.exitflag = exitflag; %Will report why the solver stopped. +ve is success, 0 or -ve will stop calculation with explanation
+    plotData.solverMessage = solverOutput.message;
     
     % Gather data for internal cost logic
     IP = optimVars.ImportPrice;
