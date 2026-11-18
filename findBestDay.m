@@ -31,7 +31,8 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
         shiftedValue(i,1) = SP;
         saving(i,1) = DP;
         time(i,1) = date.start;
-        energyUse(i,1) = calculateEnergy();
+        % Net daily energy: heat pump + appliances - PV, in kWh
+        energyUse(i,1) = sum(plotData.unbalancedPower)*0.5;
         printOutDate = datetime(date.start,"InputFormat",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC','Format','dd/MM/uuuu');
         disp(string(printOutDate) + ' has completed successfully!');
     end
