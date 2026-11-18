@@ -99,10 +99,12 @@ function f = costFunction(x)
 end
 function out = gatherOptimisationData()
     % Check all components are working properly
+    inputData = humanMachineInterface();
     data = testController();
-    HP_Data = heatPump();
-    PV_Data = solarPV();
-    AP_Data = homeAppliances();
+
+    HP_Data = heatPump(data, inputData);
+    PV_Data = solarPV(data, inputData);
+    AP_Data = homeAppliances(data, inputData);
     HP_Power = HP_Data.HP_Power;
     HP_Time = HP_Data.HP_Time_Base;
     PV_Time = PV_Data.PV_Time_Base;
