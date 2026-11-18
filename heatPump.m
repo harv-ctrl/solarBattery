@@ -1,6 +1,12 @@
-function HP_Data = heatPump()
-    data = testController(); 
-    inputData = humanMachineInterface();
+function HP_Data = heatPump(data, inputData)
+    % nargin counts how many inputs a function received
+    if nargin < 2
+        inputData = humanMachineInterface();
+    end
+
+    if nargin < 1
+        data = testController();
+    end
     %% Heating Requirement   
     % From HMI
     heatLossRate = inputData.heatPump.heatLoss;

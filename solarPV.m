@@ -1,7 +1,11 @@
-function PV_Data = solarPV()
-    % Gathers data
-    data = testController();
+function PV_Data = solarPV(data, inputData) %nargin = "if no data supplied, download it"
+    if nargin < 2
     inputData = humanMachineInterface();
+    end
+
+    if nargin < 1
+    data = testController();
+    end
 
     % Reads amount of power incident
     GTI = data.Solar_Data.GTI;

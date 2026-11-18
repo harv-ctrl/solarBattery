@@ -1,8 +1,11 @@
-function AP_Data = homeAppliances()
-    % Gather data
+function AP_Data = homeAppliances(data, input)
+if nargin < 2
     input = humanMachineInterface();
-    data = testController();
+end
 
+if nargin < 1
+    data = testController();
+end
     % Convert start and end specified times to datetime
     ST = append(input.TestCase.begin_date_short,input.ApplianceData.Start_Time);
     ET = append(input.TestCase.begin_date_short,input.ApplianceData.End_Time);
