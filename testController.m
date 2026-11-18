@@ -34,22 +34,61 @@ function energyCosts = getTestEnergyCost()
    % their group. Coventry is B, so changed both to B
     energyImportData = webread(agileAPIImport);
     energyExportData = webread(agileAPIExport);
-    count = energyImportData.count;
-    twoDayEIC = zeros(count,1);
-    twoDayEEC = zeros(count,1);
-    twoDayTime = strings(count,1);
-    for i = 1:count
-        twoDayEIC(i,1) = energyImportData.results(i).value_inc_vat;
-        twoDayEEC(i,1) = energyExportData.results(i).value_inc_vat;
-        twoDayTime{i,1} = energyImportData.results(i).valid_from;
+
+    % Read import prices and their timestamps
+    importCount = numel(energyImportData.results); %counts how many records were downloaded
+    importPrices = zeros(importCount,1); 
+    importTimes = strings(importCount,1);
+
+    for i = 1:importCount
+        importPrices(i) = energyImportData.results(i).value_inc_vat; % price including VAT
+        importTimes(i) = energyImportData.results(i).valid_from; % supplies the time price begins
     end
-    twoDayEIC = flip(twoDayEIC); EIC = twoDayEIC(1:48);
-    twoDayEEC = flip(twoDayEEC);EEC = twoDayEEC(1:48);
-    twoDayTime = flip(twoDayTime);time = twoDayTime(1:48);
-    time = datetime(time, 'InputFormat','uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
-    importCosts = struct('Energy_Import_Prices', EIC, 'Energy_Import_Time_Base',time);
-    exportCosts = struct('Energy_Export_Prices',EEC,'Energy_Export_Time_Base',time);
-    energyCosts = struct('Energy_Import_Costs',importCosts,'Energy_Export_Costs',exportCosts);
+
+    % Read export prices and their timestamps (Exports now retain their own
+    % timestamps to match up better
+    exportCount = numel(energyExportData.results); 
+    exportPrices = zeros(exportCount,1);
+    exportTimes = strings(exportCount,1);
+
+    for i = 1:exportCount
+        exportPrices(i) = energyExportData.results(i).value_inc_vat;
+        exportTimes(i) = energyExportData.results(i).valid_from;
+    end
+
+    % Convert timestamp text into MATLAB dates
+    timeFormat = "uuuu-MM-dd'T'HH:mm:ss'Z'";
+
+    importTimes = datetime(importTimes, ...
+        'InputFormat', timeFormat, 'TimeZone', 'UTC');
+
+    exportTimes = datetime(exportTimes, ...
+        'InputFormat', timeFormat, 'TimeZone', 'UTC');
+
+    % Select the exact 48 half-hours required for the test day
+    dayStart = datetime(beg, ...
+        'InputFormat', timeFormat, 'TimeZone', 'UTC');
+
+    expectedTimes = dayStart + minutes((0:30:1410)'); %makes the 48 timestamps as a column of half hour intervals
+
+    [importFound, importIndex] = ismember(expectedTimes, importTimes);
+    [exportFound, exportIndex] = ismember(expectedTimes, exportTimes);
+
+    assert(all(importFound), 'Import prices are missing for the test day.');
+    assert(all(exportFound), 'Export prices are missing for the test day.');
+
+    % Return prices matched to the correct half-hours
+    importCosts = struct( ... %struct puts prices & times into named fields for the code to function
+        'Energy_Import_Prices', importPrices(importIndex), ... % this bit orders prices to match required timestamps
+        'Energy_Import_Time_Base', expectedTimes);
+
+    exportCosts = struct( ...
+        'Energy_Export_Prices', exportPrices(exportIndex), ...
+        'Energy_Export_Time_Base', expectedTimes);
+
+    energyCosts = struct( ...
+        'Energy_Import_Costs', importCosts, ...
+        'Energy_Export_Costs', exportCosts);
 end
 
 function solarTestData = getTestPVPower()
