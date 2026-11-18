@@ -20,7 +20,7 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
     energyUse = zeros([daysInYear 1]);
     bestDay = true; %change this if you trying to run your basic 2022 loop (H)
     %% Main Function
-    for i = 1:daysInYear % daysInYear will run for the whole year! (For testing, do i = 1:2 for 48h window) (H)
+    for i = 1:2 % daysInYear will run for the whole year! (For testing, do i = 1:2 for 48h window) (H)
         date.start = days.start(i);
         date.end = days.finish(i);
         date.ss = days.ss(i);
@@ -40,76 +40,78 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
     yearEnergy = energyUse;
     
     % It worked! Yippee!
-    load handel; sound(y,Fs)
+    % load handel; sound(y,Fs)
 end
-function days = calculateYearDates(daysInYear)
-global year
-    % In order to let the APIs run, strings of dates are used instead of
-    % datetimes. This could certainly have been improved.
-    if daysInYear == 366
-        dayNum = [31,29,31,30,31,30,31,31,30,31,30,31]; 
-    else
-        dayNum = [31,28,31,30,31,30,31,31,30,31,30,31]; 
-    end
-    y = year;
-    nexty = string(str2double(y)+1);
-    p = 1; % counting variable
-    
-    % Preallocation for efficiency
-    start = strings([daysInYear 1]);
-    finish = strings([daysInYear 1]);
-    ss = strings([daysInYear 1]);
-    se = strings([daysInYear 1]);
-
-    % Writing dates to array
-    for k = 1:12
-         for i = 1:dayNum(k) 
-            if i < dayNum(k) 
-                    start(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'),'T00:00:00Z');
-                    finish(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i+1),2,'left','0'),'T23:30:00Z');
-                    ss(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'));
-                    se(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i+1),2,'left','0'));
-                    p = p+1;
-            else
-                if k < 12
-                    start(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'),'T00:00:00Z');
-                    finish(p,1) = append(y,'-',pad(string(k+1),2,'left','0'),'-',pad(string(1),2,'left','0'),'T23:30:00Z');
-                    ss(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'));
-                    se(p,1) = append(y,'-',pad(string(k+1),2,'left','0'),'-',pad(string(1),2,'left','0'));
-                    p = p+1;
-                else
-                        
-                    start(p,1) = append(y,'-',pad(string(12),2,'left','0'),'-',pad(string(31),2,'left','0'),'T00:00:00Z');
-                    finish(p,1) = append(nexty,'-',pad(string(1),2,'left','0'),'-',pad(string(1),2,'left','0'),'T23:30:00Z');
-                    ss(p,1) = append(y,'-',pad(string(12),2,'left','0'),'-',pad(string(31),2,'left','0'));
-                    se(p,1) = append(nexty,'-',pad(string(1),2,'left','0'),'-',pad(string(1),2,'left','0'));
-                    p = p+1;
-                end
-             end
-         end
-    end
-    % Adding to seperate structure
-    days.start = start;
-    days.finish = finish;
-    days.ss = ss;
-    days.se = se;
 % This is the improvement I could chuck in for Ferdinand's code. Uses
 % in-house MATLAB datetime function to build the dates.
 
-    %function days = calculateYearDates(daysInYear)
-        %global year
+function days = calculateYearDates(daysInYear)
+global year
 
-        %firstDay = datetime(str2double(year), 1, 1, 'TimeZone', 'UTC');
+firstDay = datetime(str2double(year), 1, 1, 'TimeZone', 'UTC');
 
-        % Generate each day and the following day
-        %startDates = firstDay + caldays((0:daysInYear-1)');
-        %nextDates = startDates + caldays(1);
+% Generate each day and the following day
+startDates = firstDay + caldays((0:daysInYear-1)');
+nextDates = startDates + caldays(1);
 
-        % Short dates for weather requests
-        %days.ss = string(startDates, 'yyyy-MM-dd');
-        %days.se = string(nextDates, 'yyyy-MM-dd');
+% Short dates for weather requests
+days.ss = string(startDates, 'yyyy-MM-dd');
+days.se = string(nextDates, 'yyyy-MM-dd');
 
-        % Full timestamps for tariff requests
-        %days.start = string(startDates, "yyyy-MM-dd'T'HH:mm:ss'Z'");
-        %days.finish = string(nextDates + hours(23) + minutes(30),"yyyy-MM-dd'T'HH:mm:ss'Z'");
+% Full timestamps for tariff requests
+days.start = string(startDates, "yyyy-MM-dd'T'HH:mm:ss'Z'");
+days.finish = string(nextDates + hours(23) + minutes(30),"yyyy-MM-dd'T'HH:mm:ss'Z'");
 end
+%% Alternate Year Date code
+
+%function days = calculateYearDates(daysInYear)
+%global year
+    % In order to let the APIs run, strings of dates are used instead of
+    % datetimes. This could certainly have been improved.
+%    if daysInYear == 366
+%        dayNum = [31,29,31,30,31,30,31,31,30,31,30,31]; 
+%    else
+%        dayNum = [31,28,31,30,31,30,31,31,30,31,30,31]; 
+%    end
+%    y = year;
+%    nexty = string(str2double(y)+1);
+%    p = 1; % counting variable
+    
+    % Preallocation for efficiency
+%    start = strings([daysInYear 1]);
+%    finish = strings([daysInYear 1]);
+%    ss = strings([daysInYear 1]);
+%    se = strings([daysInYear 1]);
+
+    % Writing dates to array
+%    for k = 1:12
+%         for i = 1:dayNum(k) 
+%            if i < dayNum(k) 
+%                    start(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'),'T00:00:00Z');
+%                    finish(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i+1),2,'left','0'),'T23:30:00Z');
+%                    ss(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'));
+%                    se(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i+1),2,'left','0'));
+%                    p = p+1;
+%            else
+%                if k < 12
+%                    start(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'),'T00:00:00Z');
+%                    finish(p,1) = append(y,'-',pad(string(k+1),2,'left','0'),'-',pad(string(1),2,'left','0'),'T23:30:00Z');
+%                    ss(p,1) = append(y,'-',pad(string(k),2,'left','0'),'-',pad(string(i),2,'left','0'));
+%                    se(p,1) = append(y,'-',pad(string(k+1),2,'left','0'),'-',pad(string(1),2,'left','0'));
+%                    p = p+1;
+%                else
+                        
+%                    start(p,1) = append(y,'-',pad(string(12),2,'left','0'),'-',pad(string(31),2,'left','0'),'T00:00:00Z');
+%                    finish(p,1) = append(nexty,'-',pad(string(1),2,'left','0'),'-',pad(string(1),2,'left','0'),'T23:30:00Z');
+%                    ss(p,1) = append(y,'-',pad(string(12),2,'left','0'),'-',pad(string(31),2,'left','0'));
+%                    se(p,1) = append(nexty,'-',pad(string(1),2,'left','0'),'-',pad(string(1),2,'left','0'));
+%                    p = p+1;
+%                end
+%             end
+%         end
+%    end
+    % Adding to seperate structure
+%    days.start = start;
+%    days.finish = finish;
+%    days.ss = ss;
+%    days.se = se;
