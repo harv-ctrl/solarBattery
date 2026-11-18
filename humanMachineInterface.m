@@ -29,7 +29,7 @@ function inputData = humanMachineInterface()
     %From my understanding, it uses the next day as the day thats shown in
     %the app. 
     testDay ='2026-01-01';
-    nextDay = '2022-01-02';
+    nextDay = '2026-01-02';
 
 
     %% INDIVIDUAL TEST DAY SPEC (FOR APP)
