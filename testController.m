@@ -1,4 +1,5 @@
 function data = testController()
+disp('Downloading weather and tariff data');
     % Gather initial values for API queries
     inputData = humanMachineInterface();
 
@@ -9,10 +10,11 @@ function data = testController()
     beg = datetime(inputData.TestCase.begin_date_short,"Format","uuuu-MM-dd",'TimeZone','UTC');
     fin = datetime(inputData.TestCase.end_date_short, "Format","uuuu-MM-dd",'TimeZone','UTC');
     weatherSite = append('https://archive-api.open-meteo.com/v1/archive?latitude=',string(lat),'&longitude=',string(lon),'&start_date=',string(beg),'&end_date=',string(fin),'&hourly=temperature_2m&hourly=global_tilted_irradiance&tilt=40');
+    allData = [];
     try
         allData = webread(weatherSite);
-    catch
-        disp('Unable to access Open-Meteo. Check input dates and connection.');
+    catch ME
+        error('testController:WeatherDownloadFailed', 'Open-Meteo download failed for %s to %s. Details: %s', char(beg), char(fin), ME.message);
     end
     %% END OF ADDED SECTION
     
