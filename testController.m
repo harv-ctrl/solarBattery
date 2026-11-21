@@ -1,9 +1,47 @@
 function data = testController()
-disp('Downloading weather and tariff data');
     % Gather initial values for API queries
     inputData = humanMachineInterface();
+%% Data structure recall
+saveFolder = fullfile(fileparts(mfilename('fullpath')), 'data', 'historical');
 
-    %% SECTION HERE TO REDUCE NUMBER OF OPEN-METEO CALLS (I'm running out)
+savedFiles = dir(fullfile(saveFolder, 'historical_*.mat'));
+
+if isempty(savedFiles)
+    disp("No saved historical data found.");
+end
+
+% Check the most recently saved files first
+[~, newestFirst] = sort([savedFiles.datenum], 'descend');
+savedFiles = savedFiles(newestFirst);
+
+for k = 1:numel(savedFiles)
+    savedPath = fullfile(saveFolder, savedFiles(k).name);
+    saved = load(savedPath, 'historicalData');
+    record = saved.historicalData;
+    % Check request matches (long.lat.day.settings as discussed 16/11/26)
+    sameLocation = ...
+        record.latitude == inputData.location.lat && ...
+        record.longitude == inputData.location.lon;
+    sameDates = ...
+        strcmp(record.settings.TestCase.begin_date, ...
+        inputData.TestCase.begin_date) && ...
+        strcmp(record.settings.TestCase.end_date, ...
+        inputData.TestCase.end_date);
+    sameDataSettings = ...
+        record.solarTiltDegrees == 40 && ...
+        strcmp(record.importTariff, 'E-1R-AGILE-18-02-21-B') && ...
+        strcmp(record.exportTariff, 'E-1R-AGILE-OUTGOING-19-05-13-B') && ...
+        strcmp(record.priceUnits, 'pence/kWh');
+
+    if sameLocation && sameDates && sameDataSettings
+        data = record.data;
+        disp("Historical data loaded from: " + savedPath);
+        return;
+    end
+end
+
+disp("No matching historical data found. Downloading new data.");
+    %% SECTION HERE TO REDUCE NUMBER OF OPEN-METEO CALLS (I'm running out) (NOT ANYMORE!!!)
     global allData 
     lat = inputData.location.lat;
     lon = inputData.location.lon;
@@ -22,8 +60,37 @@ disp('Downloading weather and tariff data');
     solarData = getTestPVPower(); % Loading Solar Data from Open-Meteo,com
     energyCosts = getTestEnergyCost(); % Loading Octopus Energy Agile Data
     
-    % Create data package for components
+    % Create data package for components. STAGE 2 STARTS HERE. 
+    % If something is wrong, it's probably this
     data = struct('Temperature_Data', tempData, 'Solar_Data', solarData, 'Energy_Data', energyCosts);
+
+    %% Save the historical inputs
+    historicalData.latitude = inputData.location.lat;
+    historicalData.longitude = inputData.location.lon;
+    historicalData.day = inputData.TestCase.begin_date_short;
+    historicalData.downloadedAt = datetime('now', 'TimeZone', 'UTC');
+
+    % Do not forget to change this if housing conditions are altered.
+    historicalData.settings = inputData;
+    historicalData.solarTiltDegrees = 40;
+    historicalData.importTariff = 'E-1R-AGILE-18-02-21-B'; % B=Coventry
+    historicalData.exportTariff = 'E-1R-AGILE-OUTGOING-19-05-13-B'; % B=Coventry
+    historicalData.priceUnits = 'pence/kWh';
+    historicalData.data = data;
+
+    % Storage folder for le data
+    saveFolder = fullfile(fileparts(mfilename('fullpath')), 'data', 'historical');
+    if ~isfolder(saveFolder)
+        mkdir(saveFolder);
+    end
+    
+    % Function below names each record to match (or at least should)
+    downloadStamp = string(historicalData.downloadedAt, "yyyyMMdd'T'HHmmssSSS");
+
+    fileName = sprintf('historical_%s_lat%.4f_lon%.4f_%s.mat', ...
+        char(historicalData.day), historicalData.latitude, historicalData.longitude, char(downloadStamp));
+    save(fullfile(saveFolder, fileName), 'historicalData');
+    disp("Historical data saved to: " + fullfile(saveFolder, fileName));
 end
 %% Locals
 function energyCosts = getTestEnergyCost()
