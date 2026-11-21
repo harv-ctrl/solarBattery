@@ -20,7 +20,7 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
     energyUse = zeros([daysInYear 1]);
     bestDay = true; %change this if you trying to run your basic 2022 loop (H)
     %% Main Function
-    for i = 1:2 % daysInYear will run for the whole year! (For testing, do i = 1:2 for 48h window) (H)
+    for i = 1:7 % daysInYear will run for the whole year! (For testing, do i = 1:2 for 48h window) (H)
         date.start = days.start(i);
         date.end = days.finish(i);
         date.ss = days.ss(i);
