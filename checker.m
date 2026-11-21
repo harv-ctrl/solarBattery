@@ -82,3 +82,157 @@ fprintf('Grid imports:                   %.4f kWh\n', importEnergy);
 fprintf('Grid exports:                   %.4f kWh\n', exportEnergy);
 fprintf('Energy balance error:           %.10f kWh\n', balanceError);
 fprintf('Electricity bill:               £%.4f\n', idleBillPence/100);
+
+%% 7. Run the optimiser and compare its household inputs
+[DP, UP, SP, x_opt, plotData] = optimisedCost();
+
+tol = 1e-6;
+x = x_opt(:);
+
+assert(numel(x) == 48 && all(isfinite(x)), ...
+    'Battery schedule must contain 48 finite values.');
+
+assert(isequal(plotData.time(:), expectedTimes), ...
+    'Optimiser timestamps differ from the household check.');
+
+assert(max(abs(plotData.unbalancedPower(:) - netGridPower)) < tol, ...
+    'Optimiser household inputs differ from the household check.');
+
+%% 8. Independently reconstruct battery energy and grid power
+% These values match the current settings in optimisedCost.m.
+initialEnergy = 2; % kWh
+minimumEnergy = 1; % kWh
+maximumEnergy = 9; % kWh
+powerLimit = 2;    % kW
+
+storedEnergy = initialEnergy - cumsum(x)*dt;
+scheduledGrid = netGridPower - x;
+
+assert(all(abs(x) <= powerLimit + tol), ...
+    'Battery power limit exceeded.');
+
+assert(all(storedEnergy >= minimumEnergy - tol) && ...
+    all(storedEnergy <= maximumEnergy + tol), ...
+    'Battery stored-energy limit exceeded.');
+
+assert(abs(storedEnergy(end) - initialEnergy) < tol, ...
+    'Battery does not finish at its starting energy.');
+
+assert(max(abs(storedEnergy - plotData.SOC(:))) < tol, ...
+    'Reported battery energy differs from the independent calculation.');
+
+assert(max(abs(scheduledGrid - plotData.balancedPower(:))) < tol, ...
+    'Reported grid power differs from the independent calculation.');
+
+%% 9. Independently check the scheduled bill and savings
+scheduledBillPence = sum( ...
+    max(scheduledGrid, 0).*importPrice ...
+    - max(-scheduledGrid, 0).*exportPrice)*dt;
+
+assert(abs(UP - idleBillPence) < tol, ...
+    'Reported idle bill differs from the independent calculation.');
+
+assert(abs(SP - scheduledBillPence) < tol, ...
+    'Reported scheduled bill differs from the independent calculation.');
+
+assert(abs(DP - (idleBillPence - scheduledBillPence)) < tol, ...
+    'Reported saving differs from the independent calculation.');
+
+%% 10. Check the whole-day energy balance with the lossless battery
+scheduledImports = sum(max(scheduledGrid, 0))*dt;
+scheduledExports = sum(max(-scheduledGrid, 0))*dt;
+batteryEnergyChange = storedEnergy(end) - initialEnergy;
+
+scheduledBalanceError = pvEnergy + scheduledImports ...
+    - householdEnergy - scheduledExports - batteryEnergyChange;
+
+assert(abs(scheduledBalanceError) < tol, ...
+    'Scheduled household energy balance does not close.');
+
+fprintf('\nPASS: Optimiser inputs match the household check.\n');
+fprintf('PASS: Battery power, energy and final-charge constraints hold.\n');
+fprintf('PASS: Reported battery and grid profiles match calculations.\n');
+fprintf('PASS: Bills and savings match independent calculations.\n');
+fprintf('PASS: Scheduled household energy balance closes.\n');
+
+fprintf('\n--- OPTIMISED BATTERY RESULTS ---\n');
+fprintf('Grid imports:          %.4f kWh\n', scheduledImports);
+fprintf('Grid exports:          %.4f kWh\n', scheduledExports);
+fprintf('Idle-battery bill:     £%.4f\n', UP/100);
+fprintf('Scheduled bill:        £%.4f\n', SP/100);
+fprintf('Saving:                £%.4f\n', DP/100);
+%% 11. Separate space heating and hot-water demand
+% Hot water disabled
+spaceOnlySettings = inputData; % settings with the hot water switched OFF
+spaceOnlySettings.heatPump.hotWaterEnergy = 0;
+
+spaceOnly = heatPump(data, spaceOnlySettings); % heat pump results for hotWater OFF
+
+spacePower = spaceOnly.HP_Power(:); % Electricity demand for space heating
+hotWaterPower = HP.HP_Power(:) - spacePower; %heat pump demand - space heating demand
+
+spaceEnergy = sum(spacePower)*dt;
+hotWaterEnergy = sum(hotWaterPower)*dt;
+
+%% 12. Check the hot-water requirement
+% Current assumption:   90 litres heated through 40 degrees C.
+expectedThermalEnergy = 90     *4.18*            40 /   3600; % Energy in hot water
+expectedElectricalEnergy = expectedThermalEnergy/inputData.heatPump.COP;% Heat/COP
+
+hotWaterStart = datetime( ...
+    append(inputData.TestCase.begin_date_short, ...
+    inputData.heatPump.HW_Start), ...
+    'InputFormat', "yyyy-MM-dd'T'HH:mm:ss'Z'", ...
+    'TimeZone', 'UTC'); % 11:00, attached to the test date
+
+hotWaterEnd = datetime( ...
+    append(inputData.TestCase.begin_date_short, ...
+    inputData.heatPump.HW_End), ...
+    'InputFormat', "yyyy-MM-dd'T'HH:mm:ss'Z'", ...
+    'TimeZone', 'UTC'); % 15:00 attached to test date
+
+hotWaterWindow = expectedTimes >= hotWaterStart & expectedTimes < hotWaterEnd;
+
+windowHours = hours(hotWaterEnd - hotWaterStart); % Length of window (4h)
+expectedHotWaterPower = expectedElectricalEnergy/windowHours; % Expected electricity use divided by the window length
+
+assert(abs(hotWaterEnergy - expectedElectricalEnergy) < tol, ...
+    'Hot-water electrical energy does not match the requirement.');
+
+assert(all(abs(hotWaterPower(~hotWaterWindow)) < tol), ...
+    'Hot-water demand appears outside the configured window.');
+
+assert(all(abs(hotWaterPower(hotWaterWindow) ...
+    - expectedHotWaterPower) < tol), ...
+    'Hot-water power does not match the configured window length.');
+
+%% 13. Check space-heating limits and warm-weather cutoff
+outdoorTemp = data.Temperature_Data.Average_Temperatures(:);
+
+assert(all(spacePower >= -tol & spacePower <= 5 + tol), ...
+    'Space-heating electrical power is outside 0–5 kW.');
+
+assert(all(abs(spacePower(outdoorTemp > 17)) < tol), ...
+    'Space heating operates above the current 17 C cutoff.');
+
+assert(abs(spaceEnergy + hotWaterEnergy - HP.HP_Energy) < tol, ...
+    'Space-heating and hot-water energy do not sum to the HP total.');
+
+fprintf('\n--- HEATING AND HOT WATER ---\n');
+fprintf('Outdoor temperature range:       %.2f to %.2f C\n', ...
+    min(outdoorTemp), max(outdoorTemp));
+fprintf('Space-heating electricity:        %.4f kWh\n', spaceEnergy);
+fprintf('Hot-water heat requirement:       %.4f kWh thermal\n', ...
+    expectedThermalEnergy);
+fprintf('Expected hot-water electricity:   %.4f kWh\n', ...
+    expectedElectricalEnergy);
+fprintf('Modelled hot-water electricity:   %.4f kWh\n', ...
+    hotWaterEnergy);
+fprintf('Hot-water window:                 %.2f hours\n', windowHours);
+fprintf('Hot-water electrical power:       %.4f kW\n', ...
+    expectedHotWaterPower);
+fprintf('Maximum space-heating power:      %.4f kW\n', max(spacePower));
+
+fprintf('\nPASS: Hot-water energy, timing and power agree.\n');
+fprintf('PASS: Space-heating limits and temperature cutoff hold.\n');
+fprintf('PASS: Space heating plus hot water matches the HP total.\n');
