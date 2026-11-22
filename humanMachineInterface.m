@@ -4,7 +4,9 @@ function inputData = humanMachineInterface()
     
     %% Change the following for different simulation results
     % BATTERY SPECS
-    inputData.battery.battEnergy = 10; % Initial battery capacity of 10 kWh
+    inputData.battery.battEnergy = 10; % Initial battery capacity: 10 kWh
+    inputData.battery.chargeEfficiency = 0.95;    % Charging efficiency: 95%
+    inputData.battery.dischargeEfficiency = 0.95; % Discharging efficiency: 95%
     
     % LOCATION SPECS (set to Coventry)
     inputData.location.lat = 52.41;
@@ -20,7 +22,8 @@ function inputData = humanMachineInterface()
     inputData.heatPump.HW_Start = 'T11:00:00Z';
     inputData.heatPump.HW_End = 'T15:00:00Z';
 
-    %%APPLIANCE SPECS
+    %% APPLIANCE SPECS (Drastic room for improvement once researched.
+    % Fridge, oven, electronics.
     inputData.ApplianceData.Start_Time = 'T02:00:00Z';
     inputData.ApplianceData.End_Time = 'T05:00:00Z';
     inputData.ApplianceData.totalEnergy = 0.67+0.95; % Combined Washing Machine and Dishwasher

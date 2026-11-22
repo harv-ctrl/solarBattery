@@ -105,7 +105,15 @@ minimumEnergy = 1; % kWh
 maximumEnergy = 9; % kWh
 powerLimit = 2;    % kW
 
-storedEnergy = initialEnergy - cumsum(x)*dt;
+chargeEfficiency = inputData.battery.chargeEfficiency;
+dischargeEfficiency = inputData.battery.dischargeEfficiency;
+
+chargingPower = max(-x, 0);
+dischargingPower = max(x, 0);
+
+storedEnergy = initialEnergy + cumsum( ...
+    chargingPower*chargeEfficiency ...
+    - dischargingPower/dischargeEfficiency)*dt;
 scheduledGrid = netGridPower - x;
 
 assert(all(abs(x) <= powerLimit + tol), ...
@@ -138,16 +146,45 @@ assert(abs(SP - scheduledBillPence) < tol, ...
 assert(abs(DP - (idleBillPence - scheduledBillPence)) < tol, ...
     'Reported saving differs from the independent calculation.');
 
-%% 10. Check the whole-day energy balance with the lossless battery
+%% 10. Check the whole-day energy balance with the battery losses
 scheduledImports = sum(max(scheduledGrid, 0))*dt;
 scheduledExports = sum(max(-scheduledGrid, 0))*dt;
+chargingEnergy = sum(chargingPower)*dt;
+dischargingEnergy = sum(dischargingPower)*dt;
+
+chargingLoss = chargingEnergy*(1 - chargeEfficiency);
+dischargingLoss = dischargingEnergy*(1/dischargeEfficiency - 1);
+totalBatteryLoss = chargingLoss + dischargingLoss;
+
 batteryEnergyChange = storedEnergy(end) - initialEnergy;
 
+% Electricity entering must account for output, losses
+% and any change in stored energy.
+batteryBalanceError = chargingEnergy - dischargingEnergy ...
+    - totalBatteryLoss - batteryEnergyChange;
+
+assert(abs(batteryBalanceError) < tol, ...
+    'Battery energy balance does not close.');
+
+% Household supply must account for demand, exports,
+% battery losses and any change in stored energy.
 scheduledBalanceError = pvEnergy + scheduledImports ...
-    - householdEnergy - scheduledExports - batteryEnergyChange;
+    - householdEnergy - scheduledExports ...
+    - totalBatteryLoss - batteryEnergyChange;
 
 assert(abs(scheduledBalanceError) < tol, ...
     'Scheduled household energy balance does not close.');
+
+fprintf('\n--- BATTERY LOSSES ---\n');
+fprintf('Electricity entering battery: %.6f kWh\n', chargingEnergy);
+fprintf('Electricity leaving battery:  %.6f kWh\n', dischargingEnergy);
+fprintf('Charging losses:              %.6f kWh\n', chargingLoss);
+fprintf('Discharging losses:           %.6f kWh\n', dischargingLoss);
+fprintf('Total battery losses:         %.6f kWh\n', totalBatteryLoss);
+fprintf('Battery balance error:        %.10f kWh\n', batteryBalanceError);
+fprintf('Household balance error:      %.10f kWh\n', scheduledBalanceError);
+
+fprintf('PASS: Battery losses and energy balances agree.\n');
 
 fprintf('\nPASS: Optimiser inputs match the household check.\n');
 fprintf('PASS: Battery power, energy and final-charge constraints hold.\n');

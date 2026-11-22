@@ -1,13 +1,16 @@
 function [DP,UP,SP,x_opt,plotData] = optimisedCost()
     % Runs local function to collect data from components
     out = gatherOptimisationData();
+    inputData = humanMachineInterface();
 
     % Define all values to be used within the cost function
     global optimVars
 
     %% Specify Battery Information --------------------------- INPUT HERE
     optimVars.initCharge = 2; % This is the initial daily charge of the battery, set initially as 2 kWh
-    optimVars.maxCharge = 10; % This is the maximum capacity as written in the humanMachineInterface
+    optimVars.maxCharge = inputData.battery.battEnergy; % This is the maximum capacity as written in the humanMachineInterface
+    optimVars.chargeEfficiency = inputData.battery.chargeEfficiency;
+    optimVars.dischargeEfficiency = inputData.battery.dischargeEfficiency;
 
     %%
     optimVars.ImportPrice = out.EC_Import_Price(1:48); 
@@ -22,23 +25,26 @@ function [DP,UP,SP,x_opt,plotData] = optimisedCost()
     % Optimisation restraints
     lb = -2 * ones(N,1);  
     ub =  2 * ones(N,1);
-    %A = [];       
-    %b = [];
+    A = [];       
+    b = [];
+    Aeq = [];
+    beq = [];
+
     %Below alteration would set proper restraints for 10% tolerance on that
     %battery (H)
-    cumulativePower = tril(ones(N));
-     A = [-dt*cumulativePower; dt*cumulativePower];
+    %cumulativePower = tril(ones(N));
+    %A = [-dt*cumulativePower; dt*cumulativePower];
 
-     b = [(0.9*optimVars.maxCharge - initCharge)*ones(N,1); (initCharge - 0.1*optimVars.maxCharge)*ones(N,1)];
+    %b = [(0.9*optimVars.maxCharge - initCharge)*ones(N,1); (initCharge - 0.1*optimVars.maxCharge)*ones(N,1)];
     
-    Aeq = ones(1,N);
-    beq = zeros(1);
+    %Aeq = ones(1,N);
+    %beq = zeros(1);
 
     % Initial guess (battery unused)
     x0 = 0*ones(N,1);
     
     options = optimoptions('fmincon','Algorithm','interior-point','MaxFunctionEvaluations',10e5,'Display','off');
-    [x_opt, ~, exitflag, solverOutput] = fmincon(@costFunction,x0,A,b,Aeq,beq,lb,ub,[],options);
+    [x_opt, ~, exitflag, solverOutput] = fmincon(@costFunction,x0,A,b,Aeq,beq,lb,ub,@batteryConstraints,options);
 
     if exitflag <= 0
         error('optimisedCost:SolverFailed', 'Battery optimisation did not complete successfully. Exit flag: %d. Details: %s', exitflag, solverOutput.message);
@@ -57,7 +63,7 @@ function [DP,UP,SP,x_opt,plotData] = optimisedCost()
     plotData.unbalancedPower = Load+AP-PV; 
     plotData.balancedPower = Load+AP-PV-x_opt; 
     plotData.time = out.PV_Time(1:48);
-    plotData.SOC = initCharge - cumsum(x_opt)*dt; %added *dt here as well (H)
+    plotData.SOC = batteryStoredEnergy(x_opt);
     plotData.batteryProfile = x_opt;
     plotData.PV = PV;
     plotData.DailyShiftedPrice = sum(((BG>0).*(BG).*IP + (BG<0).*(BG).*EP)*dt);
@@ -82,14 +88,14 @@ function f = costFunction(x)
     dt = optimVars.dt;
     N = optimVars.N;
     AP = optimVars.AP;
-    currentCharge(1) = initCharge;
+    currentCharge = [initCharge; batteryStoredEnergy(x)]; %for lossless, set currentCharge to initCharge.
     grid = Load+AP-PV-x; 
     f = sum((grid>0).*(grid).*ImportPrice + (grid<0).*(grid).*ExportPrice)*dt;
   
     % Calculate penalty for cost function
     penalty = 0;
     for i = 2:N+1
-        currentCharge(i) = currentCharge(i-1) - x(i-1)*dt; %Added the dt here. Shouldn't it multiply by the half hour?? (H)
+        %currentCharge(i) = currentCharge(i-1) - x(i-1)*dt; Added the dt here. Shouldn't it multiply by the half hour?? (H)
         if currentCharge(i) > 0.9*maxCharge
             penalty = penalty+(currentCharge(i)-0.9*maxCharge).^2;
         end
@@ -135,4 +141,29 @@ function out = gatherOptimisationData()
     out = join(T3,T_AP);
     % This generates a timetable of all component values.
 end
+function storedEnergy = batteryStoredEnergy(x)
+global optimVars
 
+chargingPower = max(-x(:), 0);
+dischargingPower = max(x(:), 0);
+
+energyAdded = chargingPower * optimVars.chargeEfficiency * optimVars.dt;
+
+energyRemoved = dischargingPower / optimVars.dischargeEfficiency * optimVars.dt;
+
+storedEnergy = optimVars.initCharge + cumsum(energyAdded - energyRemoved);
+end
+
+function [c, ceq] = batteryConstraints(x)
+global optimVars
+
+storedEnergy = batteryStoredEnergy(x);
+
+minimumEnergy = 0.1 * optimVars.maxCharge;
+maximumEnergy = 0.9 * optimVars.maxCharge;
+
+c = [storedEnergy - maximumEnergy;
+    minimumEnergy - storedEnergy];
+
+ceq = storedEnergy(end) - optimVars.initCharge;
+end
