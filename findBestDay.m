@@ -9,18 +9,18 @@ function [yearPrices,yearSaving,yearEnergy] = findBestDay()
 
     %%
     daysInYear = yeardays(str2double(year)); 
-    
+    numberOfDays = 7; %FOr full year test, set this to equal daysInYear
     days = calculateYearDates(daysInYear); % local function preallocates dates
     
     % Preallocation of matrix sizing
-    unshiftedValue = zeros([daysInYear 1]);
-    shiftedValue = zeros([daysInYear 1]);
-    time = strings(daysInYear,1);
-    saving = zeros([daysInYear 1]);
-    energyUse = zeros([daysInYear 1]);
+    unshiftedValue = zeros(numberOfDays,1);
+    shiftedValue = zeros(numberOfDays,1);
+    time = strings(numberOfDays,1);
+    saving = zeros(numberOfDays,1);
+    energyUse = zeros(numberOfDays,1);
     bestDay = true; %change this if you trying to run your basic 2022 loop (H)
     %% Main Function
-    for i = 1:7 % daysInYear will run for the whole year! (For testing, do i = 1:2 for 48h window) (H)
+    for i = 1:numberOfDays 
         date.start = days.start(i);
         date.end = days.finish(i);
         date.ss = days.ss(i);
