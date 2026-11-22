@@ -34,7 +34,23 @@ function HP_Data = heatPump(data, inputData)
     HP_Power = min(HP_Power,5);
     HP_Power(outdoorTemp > 17) = 0; % HP does not operate close to set temp
     %% Hot Water Usage
-    HW_Power_Draw = (inputData.heatPump.hotWaterEnergy)/4; % Half-hourly usage, could be improved
+    ST = append(inputData.TestCase.begin_date_short, ...
+        inputData.heatPump.HW_Start);
+    ET = append(inputData.TestCase.begin_date_short, ...
+        inputData.heatPump.HW_End);
+
+    Start_Time = datetime(ST, ...
+        'InputFormat', "yyyy-MM-dd'T'HH:mm:ss'Z'", 'TimeZone', 'UTC');
+
+    End_Time = datetime(ET, ...
+        'InputFormat', "yyyy-MM-dd'T'HH:mm:ss'Z'", 'TimeZone', 'UTC');
+
+    hotWaterDuration = hours(End_Time - Start_Time);
+
+    assert(hotWaterDuration > 0, ...
+        'Hot-water end time must be later than start time.');
+
+    HW_Power_Draw = inputData.heatPump.hotWaterEnergy/hotWaterDuration;
     ST = append(inputData.TestCase.begin_date_short,inputData.heatPump.HW_Start);
     ET = append(inputData.TestCase.begin_date_short,inputData.heatPump.HW_End);
     Start_Time = datetime(ST,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');

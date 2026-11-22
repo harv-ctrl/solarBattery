@@ -101,17 +101,20 @@ function energyCosts = getTestEnergyCost()
     agileAPIExport = append('https://api.octopus.energy/v1/products/AGILE-OUTGOING-19-05-13/electricity-tariffs/E-1R-AGILE-OUTGOING-19-05-13-B/standard-unit-rates/?period_from=',string(beg),'&period_to=',string(fin));
    % The Codes in the URLs are important, as the ending letter determines
    % their group. Coventry is B, so changed both to B
-    energyImportData = webread(agileAPIImport);
-    energyExportData = webread(agileAPIExport);
+
+   energyImportData = downloadAllTariffPages(agileAPIImport);
+   energyExportData = downloadAllTariffPages(agileAPIExport);
 
     % Read import prices and their timestamps
     importCount = numel(energyImportData.results); %counts how many records were downloaded
     importPrices = zeros(importCount,1); 
     importTimes = strings(importCount,1);
+    importEndTimes = strings(importCount,1);
 
     for i = 1:importCount
         importPrices(i) = energyImportData.results(i).value_inc_vat; % price including VAT
         importTimes(i) = energyImportData.results(i).valid_from; % supplies the time price begins
+        importEndTimes(i) = energyImportData.results(i).valid_to;
     end
 
     % Read export prices and their timestamps (Exports now retain their own
@@ -119,10 +122,12 @@ function energyCosts = getTestEnergyCost()
     exportCount = numel(energyExportData.results); 
     exportPrices = zeros(exportCount,1);
     exportTimes = strings(exportCount,1);
+    exportEndTimes = strings(exportCount,1);
 
     for i = 1:exportCount
         exportPrices(i) = energyExportData.results(i).value_inc_vat;
         exportTimes(i) = energyExportData.results(i).valid_from;
+        exportEndTimes(i) = energyExportData.results(i).valid_to;
     end
 
     % Convert timestamp text into MATLAB dates
@@ -133,6 +138,27 @@ function energyCosts = getTestEnergyCost()
 
     exportTimes = datetime(exportTimes, ...
         'InputFormat', timeFormat, 'TimeZone', 'UTC');
+    importEndTimes = datetime(importEndTimes, ...
+        'InputFormat', timeFormat, 'TimeZone', 'UTC');
+
+    exportEndTimes = datetime(exportEndTimes, ...
+        'InputFormat', timeFormat, 'TimeZone', 'UTC');
+
+    % Reject missing or invalid timestamps.
+    assert(all(~isnat(importTimes)), ...
+        'Import tariff data contains invalid timestamps.');
+
+    assert(all(~isnat(exportTimes)), ...
+        'Export tariff data contains invalid timestamps.');
+
+    % Each tariff must have only one record per start timestamp.
+    assert(numel(unique(importTimes)) == numel(importTimes), ...
+        'Import tariff data contains duplicate start timestamps.');
+
+    assert(numel(unique(exportTimes)) == numel(exportTimes), ...
+        'Export tariff data contains duplicate start timestamps.');
+
+    disp('PASS: Downloaded tariff start timestamps are valid and unique.');
 
     % Select the exact 48 half-hours required for the test day
     dayStart = datetime(beg, ...
@@ -145,6 +171,15 @@ function energyCosts = getTestEnergyCost()
 
     assert(all(importFound), 'Import prices are missing for the test day.');
     assert(all(exportFound), 'Export prices are missing for the test day.');
+    expectedEndTimes = expectedTimes + minutes(30);
+
+    assert(all(importEndTimes(importIndex) == expectedEndTimes), ...
+        'An import tariff interval does not end at the expected half-hour.');
+
+    assert(all(exportEndTimes(exportIndex) == expectedEndTimes), ...
+        'An export tariff interval does not end at the expected half-hour.');
+
+    disp('PASS: Selected tariff intervals cover the required half-hours.');
 
     % Return prices matched to the correct half-hours
     importCosts = struct( ... %struct puts prices & times into named fields for the code to function
@@ -195,6 +230,27 @@ function tempData = getTestWeather()
     tempData = struct('Average_Temperatures', averageTemps(1:48)', 'Weather_Time_Base', API_Time(1:48)');
 end
 
+function tariffData = downloadAllTariffPages(url)
+tariffData = webread(url);
+tariffData.results = tariffData.results(:);
 
+nextUrl = tariffData.next;
+pagesRead = 1;
 
+while ~isempty(nextUrl)
+    nextPage = webread(nextUrl);
 
+    tariffData.results = [tariffData.results;
+        nextPage.results(:)];
+
+    nextUrl = nextPage.next;
+    pagesRead = pagesRead + 1;
+end
+
+tariffData.next = [];
+
+assert(numel(tariffData.results) == tariffData.count, ...
+    'Downloaded tariff record count does not match the API total.');
+
+fprintf('Tariff download completed across %d page(s).\n', pagesRead);
+end

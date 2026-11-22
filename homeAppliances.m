@@ -13,7 +13,12 @@ end
     End_Time = datetime(ET,"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
     
     % Allocate time for appliance use
-    ApplPower = input.ApplianceData.totalEnergy./3;
+    applianceDuration = hours(End_Time - Start_Time);
+
+    assert(applianceDuration > 0, ...
+        'Appliance end time must be later than start time.');
+
+    ApplPower = input.ApplianceData.totalEnergy/applianceDuration;
     AP_Power = zeros(numel(data.Solar_Data.Solar_Time_Base),1);    
     for i = 1:numel(data.Solar_Data.Solar_Time_Base)
         time(i,1) = datetime(data.Solar_Data.Solar_Time_Base(i),"Format",'uuuu-MM-dd''T''HH:mm:ss''Z''', 'TimeZone', 'UTC');
