@@ -22,6 +22,10 @@ function inputData = humanMachineInterface()
     inputData.heatPump.HW_Start = 'T11:00:00Z';
     inputData.heatPump.HW_End = 'T15:00:00Z';
 
+    % PV SPECS
+    inputData.PVData.numPanels = 8;
+    inputData.PVData.panelArea = 1.7*1; % Area per panel, m2
+
     %% APPLIANCE SPECS
     inputData.ApplianceData.Start_Time = 'T02:00:00Z';
     inputData.ApplianceData.End_Time = 'T05:00:00Z';
@@ -73,9 +77,4 @@ function inputData = humanMachineInterface()
         inputData.TestCase.begin_date_short = testDay;
         inputData.TestCase.end_date_short = nextDay;
     end
-    
-    inputData.PVData.numPanels = 8;
-    inputData.PVData.panelArea = 1.7*1;
-
-    
 end
