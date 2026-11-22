@@ -22,12 +22,35 @@ function inputData = humanMachineInterface()
     inputData.heatPump.HW_Start = 'T11:00:00Z';
     inputData.heatPump.HW_End = 'T15:00:00Z';
 
-    %% APPLIANCE SPECS (Drastic room for improvement once researched.
-    % Fridge, oven, electronics.
+    %% APPLIANCE SPECS
     inputData.ApplianceData.Start_Time = 'T02:00:00Z';
     inputData.ApplianceData.End_Time = 'T05:00:00Z';
     inputData.ApplianceData.totalEnergy = 0.67+0.95; % Combined Washing Machine and Dishwasher
+
+    % Additional household electricity: placeholder daily energy, kWh/day
+    inputData.ApplianceData.fridgeFreezerEnergy = 0.8;
+    inputData.ApplianceData.lightingEnergy = 0.5;
+    inputData.ApplianceData.cookingEnergy = 1.8;
+    inputData.ApplianceData.electronicsEnergy = 1.0;
+    inputData.ApplianceData.otherEnergy = 0.4; % Excludes categories above
+
+    % Combined additional daily energy, kWh/day
+    inputData.ApplianceData.otherDailyEnergy = ...
+        inputData.ApplianceData.fridgeFreezerEnergy ...
+        + inputData.ApplianceData.lightingEnergy ...
+        + inputData.ApplianceData.cookingEnergy ...
+        + inputData.ApplianceData.electronicsEnergy ...
+        + inputData.ApplianceData.otherEnergy;
     
+    % Placeholder usage windows: [start hour, end hour]
+    % Each row represents one window.
+    inputData.ApplianceData.lightingHours = [6  8;
+                                             17 23];
+    inputData.ApplianceData.cookingHours = [7  8;
+                                            12 13;
+                                            18 20];
+    inputData.ApplianceData.electronicsHours = [17 23];
+
     % TEST DAY FOR APP (This dude loves Oct 27th & 28th 2022)
     %From my understanding, it uses the next day as the day thats shown in
     %the app. 

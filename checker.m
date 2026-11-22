@@ -1,6 +1,30 @@
-%% 1. Select the single-day settings from humanMachineInterface
-global bestDay
-bestDay = false;
+function checker(testDay)
+%% 1. Select the requested test day
+if nargin < 1
+    testDay = '2026-01-01';
+end
+
+global bestDay date
+
+% Restore the previous date settings when this function finishes,
+% including if a check fails.
+previousBestDay = bestDay;
+previousDate = date;
+cleanup = onCleanup(@() restoreDateSettings( ...
+    previousBestDay, previousDate));
+
+selectedDay = datetime(testDay, ...
+    'InputFormat', 'yyyy-MM-dd', 'TimeZone', 'UTC');
+followingDay = selectedDay + caldays(1);
+
+date = struct();
+date.start = string(selectedDay, "yyyy-MM-dd'T'HH:mm:ss'Z'");
+date.end = string(followingDay + hours(23) + minutes(30), ...
+    "yyyy-MM-dd'T'HH:mm:ss'Z'");
+date.ss = string(selectedDay, 'yyyy-MM-dd');
+date.se = string(followingDay, 'yyyy-MM-dd');
+
+bestDay = true;
 
 inputData = humanMachineInterface();
 data = testController();
@@ -53,7 +77,14 @@ reportedEnergy = [HP.HP_Energy, PV.PV_Energy, AP.AP_Energy];
 
 assert(all(abs(componentEnergy - reportedEnergy) < 1e-8), 'A reported component energy does not match its power profile.');
 
-assert(abs(AP.AP_Energy - inputData.ApplianceData.totalEnergy) < 1e-8, 'Appliance energy does not match the configured daily total.');
+expectedApplianceEnergy = inputData.ApplianceData.totalEnergy ...
+    + inputData.ApplianceData.fridgeFreezerEnergy ...
+    + inputData.ApplianceData.lightingEnergy ...
+    + inputData.ApplianceData.cookingEnergy ...
+    + inputData.ApplianceData.electronicsEnergy ...
+    + inputData.ApplianceData.otherEnergy;
+
+assert(abs(AP.AP_Energy - expectedApplianceEnergy) < 1e-8, 'Appliance energy does not match the configured daily total.');
 
 fprintf('PASS: Component energy totals match their power profiles.\n');
 fprintf('PASS: Appliance energy matches the configured total.\n');
@@ -75,7 +106,7 @@ idleBillPence = sum(max(netGridPower, 0).*importPrice - max(-netGridPower, 0).*e
 
 fprintf('\n--- HOUSEHOLD RESULTS: BATTERY IDLE ---\n');
 fprintf('Heat pump, including hot water: %.4f kWh\n', componentEnergy(1));
-fprintf('Washing and dishwasher:         %.4f kWh\n', componentEnergy(3));
+fprintf('Appliance demand:               %.4f kWh\n', componentEnergy(3));
 fprintf('Total modelled consumption:     %.4f kWh\n', householdEnergy);
 fprintf('PV generation:                  %.4f kWh\n', pvEnergy);
 fprintf('Grid imports:                   %.4f kWh\n', importEnergy);
@@ -273,3 +304,13 @@ fprintf('Maximum space-heating power:      %.4f kW\n', max(spacePower));
 fprintf('\nPASS: Hot-water energy, timing and power agree.\n');
 fprintf('PASS: Space-heating limits and temperature cutoff hold.\n');
 fprintf('PASS: Space heating plus hot water matches the HP total.\n');
+fprintf('Final battery energy on %s: %.6f kWh\n', ...
+    char(date.ss), plotData.SOC(end));
+fprintf('\nALL CHECKS PASSED FOR %s\n', char(date.ss));
+end
+
+function restoreDateSettings(previousBestDay, previousDate)
+global bestDay date
+bestDay = previousBestDay;
+date = previousDate;
+end

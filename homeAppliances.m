@@ -27,7 +27,58 @@ end
             AP_Power(i,1) = 0;
         end
     end
+    % Other energy considerations
+    washingDishwasherPower = AP_Power; % copies the complete profile over
+
+    fridgeFreezerPower = dailyDemandProfile(time, ...
+        input.ApplianceData.fridgeFreezerEnergy, [0 24]);
+
+    lightingPower = dailyDemandProfile(time, ...
+        input.ApplianceData.lightingEnergy, ...
+        input.ApplianceData.lightingHours);
+
+    cookingPower = dailyDemandProfile(time, ...
+        input.ApplianceData.cookingEnergy, ...
+        input.ApplianceData.cookingHours);
+
+    electronicsPower = dailyDemandProfile(time, ...
+        input.ApplianceData.electronicsEnergy, ...
+        input.ApplianceData.electronicsHours);
+
+    otherPower = dailyDemandProfile(time, ...
+        input.ApplianceData.otherEnergy, [0 24]);
+
+    AP_Power = washingDishwasherPower...
+        + fridgeFreezerPower ...
+        + lightingPower ...
+        + cookingPower ...
+        + electronicsPower ...
+        + otherPower;
+
     AP_Energy = sum(AP_Power)*0.5;
     % Compile output power profile
     AP_Data = struct('AP_Power',AP_Power,'AP_Energy',AP_Energy,'AP_Time',time);
+    AP_Data.washingDishwasherPower = washingDishwasherPower;
+    AP_Data.fridgeFreezerPower = fridgeFreezerPower;
+    AP_Data.lightingPower = lightingPower;
+    AP_Data.cookingPower = cookingPower;
+    AP_Data.electronicsPower = electronicsPower;
+    AP_Data.otherPower = otherPower;
+end
+function power = dailyDemandProfile(time, dailyEnergy, windows)
+hourOfDay = hours(timeofday(time(:)));
+active = false(size(hourOfDay));
+
+for k = 1:size(windows, 1)
+    active = active | ...
+        (hourOfDay >= windows(k,1) & hourOfDay < windows(k,2));
+end
+
+activeHours = sum(active)*0.5;
+
+assert(activeHours > 0, ...
+    'A household demand profile has no active half-hours.');
+
+power = zeros(size(hourOfDay));
+power(active) = dailyEnergy/activeHours;
 end
